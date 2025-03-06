@@ -5,24 +5,10 @@ import (
 	"net/http"
 )
 
-type api struct {
-	addr string
-}
-
-func (a *api) getUserHandler(w http.ResponseWriter, r *http.Request) {
-	_, err := w.Write([]byte("Users List...."))
-	if err != nil {
-		log.Println(err)
-	}
-}
-
-func (a *api) createUserHandler(w http.ResponseWriter, r *http.Request) {
-	_, err := w.Write([]byte("Created Users...."))
-	if err != nil {
-		log.Print(err)
-	}
-}
-
+/*
+Since we divided the logic into 3 files we should run
+it using - go run *.go
+*/
 func main() {
 	api := &api{
 		addr: ":8080",
