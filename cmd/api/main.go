@@ -1,6 +1,8 @@
 package main
 
-import "log"
+import (
+	"log"
+)
 
 /*
 This class initiates cfg, application and call run() of app
@@ -15,5 +17,14 @@ func main() {
 	app := application{
 		config: cfg,
 	}
-	log.Fatal(app.run())
+	//mount is initialized to accommodate HTTP calls
+
+	/*
+		Every method are attached to app,
+		as app is initialized with all the config and
+		in some form or others its going to be used in those
+		methods
+	*/
+	mux := app.mount()
+	log.Fatal(app.run(mux))
 }
