@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/lipusipu44/Social/internal/env"
-	"github.com/lipusipu44/Social/internal/storage"
+	"github.com/lipusipu44/Social/internal/store"
 	"log"
 )
 
@@ -21,8 +21,8 @@ func main() {
 		addr: env.GetEnv("API_ADDR", ":8081"),
 	}
 
-	//creating SQL storage and then pass it to api struct
-	store := storage.NewStorage(nil)
+	//creating SQL store and then pass it to api struct
+	store := store.NewStorage(nil)
 	app := application{
 		config: cfg,
 		store:  store,

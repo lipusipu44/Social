@@ -1,4 +1,4 @@
-package storage
+package store
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 
 /*
 Storage is a wrapper struct that groups different
-storage components (Post & User).
+store components (Post & User).
 It does not implement any database logic itself;
 instead, it holds interfaces for PostStorage and UserStorage.
 */
@@ -24,7 +24,7 @@ func NewStorage(db *sql.DB) Storage {
 	/*	this method to be called in api class and main class
 		and value to be set in api.go, from there it will go to handler and inside handler
 		these to be called.
-	
+
 		As create method of both PostStorage and UserStorage
 		use *pointer for Create and to satisfy interface concept for Post
 		and User Interface we need to pass &
