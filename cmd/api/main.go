@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/lipusipu44/Social/internal/env"
+	"github.com/lipusipu44/Social/internal/storage"
 	"log"
 )
 
@@ -19,8 +20,12 @@ func main() {
 		*/
 		addr: env.GetEnv("API_ADDR", ":8081"),
 	}
+
+	//creating SQL storage and then pass it to api struct
+	store := storage.NewStorage(nil)
 	app := application{
 		config: cfg,
+		store:  store,
 	}
 	//mount is initialized to accommodate HTTP calls
 

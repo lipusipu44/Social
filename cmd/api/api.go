@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/lipusipu44/Social/internal/storage"
 	"log"
 	"net/http"
 	"time"
@@ -21,6 +22,13 @@ type config struct {
 }
 type application struct {
 	config config
+
+	/*storage is added in the struct
+	so that it can be passed to handler and from
+	there it will take context to storage layer, by which
+	method will get the payload and params from context of handler
+	*/
+	store storage.Storage //meaning Storage struct from storage package
 }
 
 /*

@@ -34,12 +34,12 @@ go.work
 
 # Environment & Configurations
 .env
-.envrc
+#.envrc
 config.yaml
 secrets.json
 
 # Docker & Kubernetes
-docker-compose.override.yml
+#docker-compose.override.yml
 .kube/
 .dockerignore
 
