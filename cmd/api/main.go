@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/lipusipu44/Social/internal/env"
 	"log"
 )
 
@@ -12,7 +13,11 @@ this class is mainly for initialization and running main func
 */
 func main() {
 	cfg := config{
-		addr: ":8080",
+		/*
+			now hardcoded value to be replaced by env values
+			each time any value changes in .envrc do direnv allow
+		*/
+		addr: env.GetEnv("API_ADDR", ":8081"),
 	}
 	app := application{
 		config: cfg,
