@@ -1,0 +1,57 @@
+# Go-related files
+*.exe
+*.test
+*.out
+
+# IDE-specific (GoLand, JetBrains)
+.idea/
+*.iml
+
+# Binaries & Build Artifacts
+/bin/
+/pkg/
+/build/
+*.o
+*.a
+*.so
+*.dll
+
+# Logs & Debug Files
+*.log
+*.trace
+
+# Dependencies
+vendor/
+go.sum
+go.work
+
+# Cache & Temporary Files
+*.tmp
+*.swp
+*.swo
+*.bak
+.DS_Store
+
+# Environment & Configurations
+.env
+.envrc
+config.yaml
+secrets.json
+
+# Docker & Kubernetes
+docker-compose.override.yml
+.kube/
+.dockerignore
+
+# Node.js (if frontend exists)
+node_modules/
+dist/
+npm-debug.log
+yarn-error.log
+
+# Coverage & Test Reports
+coverage/
+*.coverprofile
+*.prof
+test-results/
+
