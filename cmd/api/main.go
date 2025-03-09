@@ -1,6 +1,7 @@
 package main
 
 import (
+	db2 "github.com/lipusipu44/Social/internal/db"
 	"github.com/lipusipu44/Social/internal/env"
 	"github.com/lipusipu44/Social/internal/store"
 	"log"
@@ -19,10 +20,33 @@ func main() {
 			each time any value changes in .envrc do direnv allow
 		*/
 		addr: env.GetEnv("API_ADDR", ":8081"),
+		/*
+			Adding dbConfig by fetching value from property file
+		*/
+		dbConfig: dbConfig{
+			addr: env.GetEnv("DB_ADDR", "postgresql://admin:adminpassword@localhost/"+
+				"socialnetwork?sslmode=disable"),
+			maxOpenConns: env.GetEnvInt("DB_MAX_OPEN_CONNS", 10),
+			maxIdleConns: env.GetEnvInt("DB_MAX_IDLE_CONNS", 10),
+			maxIdleTime:  env.GetEnv("DB_MAX_IDLE_TIME", "15m"),
+		},
 	}
+	/*
+		creating db instance from db.go in internal/db package,
+		this will fetch the value from config for New() method in db.go
+		post this is created, this instance to be passed to store var
 
+		Imp to note here the config stays in dbConfig and config struct, but usage happens independently
+	*/
+	db, err := db2.New(cfg.dbConfig.addr, cfg.dbConfig.maxOpenConns, cfg.dbConfig.maxIdleConns, cfg.dbConfig.maxIdleTime)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+	log.Println("DB Connection Pool Established")
 	//creating SQL store and then pass it to api struct
-	store := store.NewStorage(nil)
+	store := store.NewStorage(db)
+
 	app := application{
 		config: cfg,
 		store:  store,

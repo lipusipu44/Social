@@ -17,9 +17,32 @@ configs to start the API server.
 Values to this struct to be injected from main class
 */
 
+//dbConfig
+/*
+This contains all the config related to DB and properties to be fetched
+from env property file, this struct is going to be a part
+of config struct and initialization will happen from main.go
+ */
+type dbConfig struct {
+	addr string
+	maxOpenConns int
+	maxIdleConns int
+	maxIdleTime string
+}
 type config struct {
 	addr string
+	dbConfig dbConfig
 }
+
+//application
+/*
+application struct contains all struct
+as and when its required with function when app *application
+attached it gets the fields of this struct
+
+as and when web app becomes bigger application also contains
+more and more struct
+*/
 type application struct {
 	config config
 

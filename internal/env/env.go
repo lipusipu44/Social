@@ -24,7 +24,7 @@ func GetEnv(key, fallback string) string {
 	return fallback
 }
 
-func getEnvInt(key string, fallback int) int {
+func GetEnvInt(key string, fallback int) int {
 	if value, ok := os.LookupEnv(key); ok {
 		val, err := strconv.Atoi(value)
 		if err != nil {
