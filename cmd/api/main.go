@@ -13,6 +13,8 @@ which starts the http server.
 
 this class is mainly for initialization and running main func
 */
+const version = "0.0.1" //only used in health check api as of now
+
 func main() {
 	cfg := config{
 		/*
@@ -30,11 +32,12 @@ func main() {
 			maxIdleConns: env.GetEnvInt("DB_MAX_IDLE_CONNS", 10),
 			maxIdleTime:  env.GetEnv("DB_MAX_IDLE_TIME", "15m"),
 		},
+		env: env.GetEnv("API_ENV", "dev"),
 	}
 	/*
 		creating db instance from db.go in internal/db package,
 		this will fetch the value from config for New() method in db.go
-		post this is created, this instance to be passed to store var
+		post this is created, this instance to be passed to storage var
 
 		Imp to note here the config stays in dbConfig and config struct, but usage happens independently
 	*/
@@ -44,12 +47,12 @@ func main() {
 	}
 	defer db.Close()
 	log.Println("DB Connection Pool Established")
-	//creating SQL store and then pass it to api struct
-	store := store.NewStorage(db)
+	//creating SQL storage and then pass it to api struct
+	storage := store.NewStorage(db)
 
 	app := application{
 		config: cfg,
-		store:  store,
+		store:  storage,
 	}
 	//mount is initialized to accommodate HTTP calls
 

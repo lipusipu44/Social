@@ -22,16 +22,18 @@ Values to this struct to be injected from main class
 This contains all the config related to DB and properties to be fetched
 from env property file, this struct is going to be a part
 of config struct and initialization will happen from main.go
- */
+*/
 type dbConfig struct {
-	addr string
+	addr         string
 	maxOpenConns int
 	maxIdleConns int
-	maxIdleTime string
+	maxIdleTime  string
 }
 type config struct {
-	addr string
+	addr     string
 	dbConfig dbConfig
+	//as of now below I am using it in health check API response
+	env string
 }
 
 //application
