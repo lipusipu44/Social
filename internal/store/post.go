@@ -29,8 +29,8 @@ type Post struct {
 	Title   string   `json:"title"`
 	UserID  int64    `json:"user_id"`
 	Tags    []string `json:"tags"`
-	Created int64    `json:"created_at"`
-	Updated int64    `json:"updated_at"`
+	Created string   `json:"created_at"`
+	Updated string   `json:"updated_at"`
 }
 
 func (p *PostStore) Create(ctx context.Context, post *Post) error {
@@ -38,13 +38,20 @@ func (p *PostStore) Create(ctx context.Context, post *Post) error {
 		ctx : It's a context object used to handle timeouts, cancellations,
 		and request-scoping.
 		It ensures that the database operation doesn’t run indefinitely.
+
+		these $1,$2... to be fetched from post struct which is to be passed
+		from posts.go in cmd/api package
+		from handler method
 	*/
 	query := `INSERT INTO posts (content, title, user_id,tags)
 values ($1, $2, $3, $4) RETURNING id,created_at,updated_at`
 	/*
 		above return part is used in scan section below
 	*/
-
+	/*
+		$1,$2... order is called in the same way mentioned in INSERT query above
+		in below line.
+	*/
 	err := p.db.QueryRowContext(
 		ctx,
 		query,

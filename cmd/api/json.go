@@ -5,6 +5,11 @@ import (
 	"net/http"
 )
 
+/*
+when the data is written to response Writer,
+that's treated as response payload from curl, the json
+in w will be shown in response
+*/
 func writeJSON(w http.ResponseWriter, status int, data any) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
