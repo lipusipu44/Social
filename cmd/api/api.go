@@ -92,6 +92,7 @@ func (app *application) mount() http.Handler {
 				r.Use(app.postContextMiddleware)
 				r.Get("/", app.getPostById)
 				r.Delete("/", app.deletePostHandler)
+				r.Patch("/", app.updatePostHandler)
 			})
 		})
 	})

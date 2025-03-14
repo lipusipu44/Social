@@ -119,3 +119,28 @@ func (p *PostStore) Delete(ctx context.Context, postId int64) error {
 	}
 	return nil
 }
+
+//Update
+/*
+did it by myself, self-explanatory
+*/
+func (p *PostStore) Update(ctx context.Context, post *Post) (error, *Post) {
+	query := `
+				UPDATE posts
+				SET content = $1, 
+				title = $2 
+				where id=$3
+				RETURNING  title,content`
+
+	//this part only I missed, while doing
+	var postVar *Post = post
+
+	err := p.db.QueryRowContext(ctx, query,
+		post.Content,
+		post.Title,
+		post.ID).Scan(&postVar.Title, &postVar.Content)
+	if err != nil {
+		return err, nil
+	}
+	return nil, postVar
+}

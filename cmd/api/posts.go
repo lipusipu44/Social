@@ -152,6 +152,45 @@ func (app *application) deletePostHandler(res http.ResponseWriter, req *http.Req
 	res.WriteHeader(http.StatusNoContent)
 }
 
+type UpdatePostPayload struct {
+	Title   string `json:"title" validate:"omitempty,max=255"`
+	Content string `json:"content" validate:"omitempty,max=255"`
+}
+
+//updatePostHandler
+/*
+easier than the rest of the module, did it by myself, middleware concept used
+*/
+func (app *application) updatePostHandler(res http.ResponseWriter, req *http.Request) {
+	post := getPostFromContext(req)
+	var payload UpdatePostPayload
+	if err := readJSON(res, req, &payload); err != nil {
+		app.badRequestResponse(res, req, err)
+	}
+	if err := CustomValidate.Struct(&payload); err != nil {
+		app.badRequestResponse(res, req, err)
+	}
+	/*
+		if title or content are "" then it will update
+		with original title or content or
+		take the title and content and change it
+	*/
+	if payload.Title != "" {
+		post.Title = payload.Title
+	}
+	if payload.Content != "" {
+		post.Content = payload.Content
+	}
+	err, post := app.store.Post.Update(req.Context(), post) //post on Update we got from middleware
+	if err != nil {
+		app.internalServerError(res, req, err)
+		return
+	}
+	if err := writeJSON(res, http.StatusOK, post); err != nil {
+		app.internalServerError(res, req, err)
+	}
+}
+
 /*
 Middleware section starts from here, please read it 2 times for better understanding
 */
