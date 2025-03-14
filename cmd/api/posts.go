@@ -25,14 +25,22 @@ ex:
 }
 */
 type createPostPayload struct {
-	Title   string   `json:"title"`
-	Content string   `json:"content"`
+	Title   string   `json:"title" validate:"required,max=255"` //for validation purpose details below in methods
+	Content string   `json:"content" validate:"required,max=255"`
 	Tags    []string `json:"tags"`
 }
 
 func (app *application) createPostHandler(res http.ResponseWriter, req *http.Request) {
 	var payload createPostPayload
 	if err := readJSON(res, req, &payload); err != nil {
+		app.badRequestResponse(res, req, err)
+		return
+	}
+	/*
+		this block is actually responsible for validation check not the json section in struct
+		this checks using that validate written in struct block of createPostPayload.
+	*/
+	if err := CustomValidate.Struct(&payload); err != nil {
 		app.badRequestResponse(res, req, err)
 		return
 	}

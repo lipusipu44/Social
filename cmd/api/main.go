@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/go-playground/validator/v10"
 	db2 "github.com/lipusipu44/Social/internal/db"
 	"github.com/lipusipu44/Social/internal/env"
 	"github.com/lipusipu44/Social/internal/store"
@@ -14,6 +15,21 @@ which starts the http server.
 this class is mainly for initialization and running main func
 */
 const version = "0.0.1" //only used in health check api as of now
+
+//CustomValidate
+/*
+Below 2 lines used for validation of payload and var is initialized
+at the beginning of the go run using init, same as static block
+in java
+
+this var is going to be used in all the handler classes which has payload
+to validate
+*/
+var CustomValidate *validator.Validate
+
+func init() {
+	CustomValidate = validator.New(validator.WithRequiredStructEnabled())
+}
 
 func main() {
 	cfg := config{
