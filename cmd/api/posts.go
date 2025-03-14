@@ -134,3 +134,30 @@ func (app *application) getPostById(res http.ResponseWriter, req *http.Request) 
 		app.internalServerError(res, req, err)
 	}
 }
+
+//deletePostHandler
+/*
+simple delete post handler based on post id
+*/
+func (app *application) deletePostHandler(res http.ResponseWriter, req *http.Request) {
+	idParam := chi.URLParam(req, "postId")
+	id, err := strconv.ParseInt(idParam, 10, 64)
+	if err != nil {
+		app.badRequestResponse(res, req, err)
+		return
+	}
+	if err := app.store.Post.Delete(req.Context(), id); err != nil {
+		switch {
+		case errors.Is(err, store.ErrNoRows):
+			app.notFoundResponse(res, req, err)
+			return
+		default:
+			app.internalServerError(res, req, err)
+			return
+		}
+	}
+	/*
+		no content to show as result, but status to be shown as 204 no content as all deleted
+	*/
+	res.WriteHeader(http.StatusNoContent)
+}
