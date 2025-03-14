@@ -49,8 +49,8 @@ type application struct {
 	config config
 
 	/*store is added in the struct
-	so that it can be passed to handler and from
-	there it will take context to store layer, by which
+	so that it can be passed to handler methods and from
+	there it will pass context to store layer, by which
 	method will get the payload and params from context of handler
 	*/
 	store store.Storage //meaning Storage struct from store package
@@ -86,6 +86,10 @@ func (app *application) mount() http.Handler {
 
 		r.Route("/posts", func(r chi.Router) {
 			r.Post("/", app.createPostHandler)
+
+			r.Route("/{postId}", func(r chi.Router) {
+				r.Get("/", app.getPostById)
+			})
 		})
 	})
 

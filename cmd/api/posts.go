@@ -1,8 +1,11 @@
 package main
 
 import (
+	"errors"
+	"github.com/go-chi/chi/v5"
 	"github.com/lipusipu44/Social/internal/store"
 	"net/http"
+	"strconv"
 )
 
 //createPostPayload
@@ -45,8 +48,8 @@ func (app *application) createPostHandler(res http.ResponseWriter, req *http.Req
 	}
 	ctx := req.Context()
 	/*
-		In the below statement we are sending the partial post,
-		but it will get the rest of the value from create scan method and
+		In the below statement we are sending the partial Post struct.
+		However, it will get the rest of the value from scan method in Create method and
 		store it in post, that's why reference is passed, and we will send it
 		to writeJSON for full Post payload creation as response json
 	*/
@@ -55,10 +58,10 @@ func (app *application) createPostHandler(res http.ResponseWriter, req *http.Req
 		app.store.Post.Create
 		app meaning object of application which came from method app *application
 		app struct has a key called store - this is assigned with PostStorage and UserStorage
-		by line - store.NewStorage(db) in main.go,
-		store struct has a key called Post, its not Post class or anything :) which has value as Post Interface,
-		there always confusion
-		instead of using Post interface its using PostStorage as its implements Post interface. in PostStorage.go
+		by line - store.NewStorage(db) in main.go, which gets PostStorage and UserStorage structs
+		store struct has a key called Post Interface, its not Post class or anything :) which has value as Post Interface,
+		there is always confusion
+		instead of using Post interface its using PostStorage as its implement Post interface. in PostStorage.go
 		so it has got PostStorage
 		(which implements interface Post by using all Post Interface method)
 		, which has a method called create in PostStorage class
@@ -76,5 +79,36 @@ func (app *application) createPostHandler(res http.ResponseWriter, req *http.Req
 	if err := writeJSON(res, http.StatusOK, post); err != nil {
 		writeJSONError(res, http.StatusInternalServerError, err.Error())
 		return
+	}
+}
+
+//getPostById
+/*
+this method gets the Post based on PostID, if its not there it gets
+no row found my created error, which is created in storage.go
+
+if found, it returns a Post reference and its converted to JSON in handler method
+in posts.go in cmd/api package.
+*/
+func (app *application) getPostById(res http.ResponseWriter, req *http.Request) {
+	//it gets the param postId from req, not from chi, chi is just a method to get it
+	idParam := chi.URLParam(req, "postId")
+	id, err := strconv.ParseInt(idParam, 10, 64)
+	if err != nil {
+		writeJSONError(res, http.StatusBadRequest, err.Error())
+		return
+	}
+	post, err := app.store.Post.GetByID(req.Context(), id)
+	if err != nil {
+		switch {
+		case errors.Is(err, store.ErrNoRows):
+			writeJSONError(res, http.StatusNotFound, err.Error())
+		default:
+			writeJSONError(res, http.StatusInternalServerError, err.Error())
+		}
+		return
+	}
+	if err := writeJSON(res, http.StatusOK, post); err != nil {
+		writeJSONError(res, http.StatusInternalServerError, err.Error())
 	}
 }

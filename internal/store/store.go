@@ -3,6 +3,15 @@ package store
 import (
 	"context"
 	"database/sql"
+	"errors"
+)
+
+// ErrNoRows
+/*
+this var will contain all the SQL related error
+*/
+var (
+	ErrNoRows = errors.New("no rows in result set")
 )
 
 /*
@@ -15,6 +24,7 @@ PostStore and UserStore Operations like create, insert, update based on use case
 type Storage struct {
 	Post interface {
 		Create(ctx context.Context, post *Post) error
+		GetByID(ctx context.Context, id int64) (*Post, error)
 	}
 	User interface {
 		Create(ctx context.Context, user *User) error
@@ -28,7 +38,7 @@ func NewStorage(db *sql.DB) Storage {
 
 		As create method of both PostStore and UserStore
 		use *pointer for Create and to satisfy interface concept for Post
-		and User Interface we need to pass &
+		and User Interface, we need to pass &
 	*/
 	return Storage{
 		Post: &PostStore{db: db},
