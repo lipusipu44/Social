@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"github.com/go-chi/chi/v5"
 	"github.com/lipusipu44/Social/internal/store"
@@ -101,29 +102,18 @@ in posts.go in cmd/api package.
 Update : In this branch it also gets the comment used on that post_id
 */
 func (app *application) getPostById(res http.ResponseWriter, req *http.Request) {
-	//it gets the param postId from req, not from chi, chi is just a method to get it
-	idParam := chi.URLParam(req, "postId")
-	id, err := strconv.ParseInt(idParam, 10, 64)
-	if err != nil {
-		app.badRequestResponse(res, req, err)
-		return
-	}
-	post, err := app.store.Post.GetByID(req.Context(), id)
-	if err != nil {
-		switch {
-		case errors.Is(err, store.ErrNoRows):
-			app.notFoundResponse(res, req, err)
-		default:
-			app.internalServerError(res, req, err)
-		}
-		return
-	}
+	/*
+		the logic is moved to the middleware section named postContextMiddleware which tops up
+		the handler with post; below that there is a method getPostFromContext which extracts
+		the Post struct from the handler by using req context, details explained in those 2 methods
+	*/
+	post := getPostFromContext(req)
 
 	/*
 		in this branch Post struct has got comment as a field,
 		there we are storing comments in array for that post id if any
 	*/
-	comments, err := app.store.Comment.GetCommentOfUserOnPost(req.Context(), id)
+	comments, err := app.store.Comment.GetCommentOfUserOnPost(req.Context(), post.ID)
 	if err != nil {
 		app.internalServerError(res, req, err)
 		return
@@ -160,4 +150,64 @@ func (app *application) deletePostHandler(res http.ResponseWriter, req *http.Req
 		no content to show as result, but status to be shown as 204 no content as all deleted
 	*/
 	res.WriteHeader(http.StatusNoContent)
+}
+
+/*
+Middleware section starts from here, please read it 2 times for better understanding
+*/
+// Context key type to avoid conflicts, to be used in extract key from handler
+type contextKey string
+
+const postKey contextKey = "post"
+
+//postContextMiddleware
+/*
+In Go (Golang), a handler function is used in web development to handle HTTP requests
+
+typically middleware is a medium by which handler tops-itself up with
+new information, in this case its Post struct if the logic is able to find a post-struct
+
+next handler is kind of boggy which now will contain Post struct in itself, so wherever
+another handler call will happen, it will take the data out of this handler and use it.
+*/
+func (app *application) postContextMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		idParam := chi.URLParam(req, "postId")
+		id, err := strconv.ParseInt(idParam, 10, 64)
+		if err != nil {
+			app.badRequestResponse(res, req, err)
+			return
+		}
+		post, err := app.store.Post.GetByID(req.Context(), id)
+		if err != nil {
+			switch {
+			case errors.Is(err, store.ErrNoRows):
+				app.notFoundResponse(res, req, err)
+			default:
+				app.internalServerError(res, req, err)
+			}
+			return
+		}
+		//above section direct copy paste from GET-Post call
+
+		/*
+			below line context adds post struct with a key postKey,
+			this key will be used in below method to extract Post
+			struct from req context.
+		*/
+		ctx := context.WithValue(req.Context(), postKey, post)
+
+		// Pass modified request to the handler named next
+		next.ServeHTTP(res, req.WithContext(ctx))
+	})
+}
+
+//getPostFromContext
+/*
+by using above postContextMiddleware next handler will push the data to r http.Request,
+from there by using contextKey we are extracting the data/ Post struct in this method
+*/
+func getPostFromContext(r *http.Request) *store.Post {
+	postExtract, _ := r.Context().Value(postKey).(*store.Post)
+	return postExtract
 }
