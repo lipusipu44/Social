@@ -29,6 +29,10 @@ type Storage struct {
 	User interface {
 		Create(ctx context.Context, user *User) error
 	}
+
+	Comment interface {
+		GetCommentOfUserOnPost(ctx context.Context, postId int64) ([]*Comment, error)
+	}
 }
 
 func NewStorage(db *sql.DB) Storage {
@@ -41,7 +45,8 @@ func NewStorage(db *sql.DB) Storage {
 		and User Interface, we need to pass &
 	*/
 	return Storage{
-		Post: &PostStore{db: db},
-		User: &UserStore{db: db},
+		Post:    &PostStore{db: db},
+		User:    &UserStore{db: db},
+		Comment: &CommentStore{db: db},
 	}
 }

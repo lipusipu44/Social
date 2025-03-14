@@ -25,13 +25,14 @@ in POST Payload
 📌 Tags is a slice of strings ([]string), useful for categorizing posts.
 */
 type Post struct {
-	ID      int64    `json:"id"`
-	Content string   `json:"content"`
-	Title   string   `json:"title"`
-	UserID  int64    `json:"user_id"`
-	Tags    []string `json:"tags"`
-	Created string   `json:"created_at"`
-	Updated string   `json:"updated_at"`
+	ID      int64      `json:"id"`
+	Content string     `json:"content"`
+	Title   string     `json:"title"`
+	UserID  int64      `json:"user_id"`
+	Tags    []string   `json:"tags"`
+	Created string     `json:"created_at"`
+	Updated string     `json:"updated_at"`
+	Comment []*Comment `json:"comments"` //comment not part of post table, just for showing comments on posts
 }
 
 func (p *PostStore) Create(ctx context.Context, post *Post) error {

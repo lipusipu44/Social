@@ -97,6 +97,8 @@ no row found my created error, which is created in storage.go
 
 if found, it returns a Post reference and its converted to JSON in handler method
 in posts.go in cmd/api package.
+
+Update : In this branch it also gets the comment used on that post_id
 */
 func (app *application) getPostById(res http.ResponseWriter, req *http.Request) {
 	//it gets the param postId from req, not from chi, chi is just a method to get it
@@ -116,6 +118,18 @@ func (app *application) getPostById(res http.ResponseWriter, req *http.Request) 
 		}
 		return
 	}
+
+	/*
+		in this branch Post struct has got comment as a field,
+		there we are storing comments in array for that post id if any
+	*/
+	comments, err := app.store.Comment.GetCommentOfUserOnPost(req.Context(), id)
+	if err != nil {
+		app.internalServerError(res, req, err)
+		return
+	}
+
+	post.Comment = comments
 	if err := writeJSON(res, http.StatusOK, post); err != nil {
 		app.internalServerError(res, req, err)
 	}

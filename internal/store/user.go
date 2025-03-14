@@ -10,7 +10,7 @@ type User struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	Password string `json:"-"`
-	Created  int64  `json:"created_at"`
+	Created  string `json:"created_at"`
 }
 
 //UserStore
