@@ -33,7 +33,7 @@ type createPostPayload struct {
 func (app *application) createPostHandler(res http.ResponseWriter, req *http.Request) {
 	var payload createPostPayload
 	if err := readJSON(res, req, &payload); err != nil {
-		writeJSONError(res, http.StatusBadRequest, err.Error())
+		app.badRequestResponse(res, req, err)
 		return
 	}
 	/*
@@ -73,11 +73,11 @@ func (app *application) createPostHandler(res http.ResponseWriter, req *http.Req
 
 	*/
 	if err := app.store.Post.Create(ctx, post); err != nil {
-		writeJSONError(res, http.StatusInternalServerError, err.Error())
+		app.internalServerError(res, req, err)
 		return
 	}
 	if err := writeJSON(res, http.StatusOK, post); err != nil {
-		writeJSONError(res, http.StatusInternalServerError, err.Error())
+		app.internalServerError(res, req, err)
 		return
 	}
 }
@@ -95,20 +95,20 @@ func (app *application) getPostById(res http.ResponseWriter, req *http.Request) 
 	idParam := chi.URLParam(req, "postId")
 	id, err := strconv.ParseInt(idParam, 10, 64)
 	if err != nil {
-		writeJSONError(res, http.StatusBadRequest, err.Error())
+		app.badRequestResponse(res, req, err)
 		return
 	}
 	post, err := app.store.Post.GetByID(req.Context(), id)
 	if err != nil {
 		switch {
 		case errors.Is(err, store.ErrNoRows):
-			writeJSONError(res, http.StatusNotFound, err.Error())
+			app.notFoundResponse(res, req, err)
 		default:
-			writeJSONError(res, http.StatusInternalServerError, err.Error())
+			app.internalServerError(res, req, err)
 		}
 		return
 	}
 	if err := writeJSON(res, http.StatusOK, post); err != nil {
-		writeJSONError(res, http.StatusInternalServerError, err.Error())
+		app.internalServerError(res, req, err)
 	}
 }
