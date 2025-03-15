@@ -27,3 +27,13 @@ func (app *application) notFoundResponse(w http.ResponseWriter, r *http.Request,
 	log.Printf("not found error: %s, path: %s, error: %s", r.Method, r.URL.Path, err.Error())
 	writeJSONError(w, http.StatusNotFound, "not found")
 }
+
+func (app *application) retryResponse(w http.ResponseWriter, r *http.Request, err error) {
+	log.Printf("serialization failure: %s, path: %s, error: %s", r.Method, r.URL.Path, err.Error())
+	writeJSONError(w, http.StatusConflict, "serialization failure, please retry")
+}
+
+func (app *application) conflictResponse(w http.ResponseWriter, r *http.Request, err error) {
+	log.Printf("deadlock detected: %s, path: %s, error: %s", r.Method, r.URL.Path, err.Error())
+	writeJSONError(w, http.StatusConflict, "deadlock detected, please retry")
+}

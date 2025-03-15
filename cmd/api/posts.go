@@ -159,7 +159,9 @@ type UpdatePostPayload struct {
 
 //updatePostHandler
 /*
-easier than the rest of the module, did it by myself, middleware concept used
+check the updated comment in Update Post in Post.go in store package,
+there I have mentioned about concurrent user case, how they will block it byu comparing
+version with DB version
 */
 func (app *application) updatePostHandler(res http.ResponseWriter, req *http.Request) {
 	post := getPostFromContext(req)
@@ -183,8 +185,22 @@ func (app *application) updatePostHandler(res http.ResponseWriter, req *http.Req
 	}
 	err, post := app.store.Post.Update(req.Context(), post) //post on Update we got from middleware
 	if err != nil {
-		app.internalServerError(res, req, err)
-		return
+		switch {
+		case errors.Is(err, store.ErrSerializationFailure):
+			app.retryResponse(res, req, err) // You might want to implement a retry mechanism
+
+			//all the below cases I did for dummy work, not tested so dont panic
+		case errors.Is(err, store.ErrUniqueViolation):
+			app.badRequestResponse(res, req, err)
+
+		case errors.Is(err, store.ErrDeadlock):
+			app.conflictResponse(res, req, err)
+
+		default:
+			app.internalServerError(res, req, err)
+
+		}
+
 	}
 	if err := writeJSONWrapper(res, http.StatusOK, post); err != nil {
 		app.internalServerError(res, req, err)

@@ -25,13 +25,17 @@ in POST Payload
 📌 Tags is a slice of strings ([]string), useful for categorizing posts.
 */
 type Post struct {
-	ID      int64      `json:"id"`
-	Content string     `json:"content"`
-	Title   string     `json:"title"`
-	UserID  int64      `json:"user_id"`
-	Tags    []string   `json:"tags"`
-	Created string     `json:"created_at"`
-	Updated string     `json:"updated_at"`
+	ID      int64    `json:"id"`
+	Content string   `json:"content"`
+	Title   string   `json:"title"`
+	UserID  int64    `json:"user_id"`
+	Tags    []string `json:"tags"`
+	Created string   `json:"created_at"`
+	Updated string   `json:"updated_at"`
+	Version int64    `json:"version"` /*
+		version will check the version passed in request, if matches, then
+		update will happen, and it will increase the version in each update"
+	*/
 	Comment []*Comment `json:"comments"` //comment not part of post table, just for showing comments on posts
 }
 
@@ -76,7 +80,7 @@ values ($1, $2, $3, $4) RETURNING id,created_at,updated_at`
 }
 
 func (p *PostStore) GetByID(ctx context.Context, id int64) (*Post, error) {
-	query := `SELECT id,title,user_id,content,created_at,tags,updated_at FROM posts WHERE id = $1`
+	query := `SELECT id,title,user_id,content,created_at,tags,updated_at,version FROM posts WHERE id = $1`
 	var postVar Post
 	err := p.db.QueryRowContext(ctx,
 		query, id).Scan(
@@ -86,7 +90,8 @@ func (p *PostStore) GetByID(ctx context.Context, id int64) (*Post, error) {
 		&postVar.Content,
 		&postVar.Created,
 		pq.Array(&postVar.Tags),
-		&postVar.Updated)
+		&postVar.Updated,
+		&postVar.Version)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
@@ -122,15 +127,21 @@ func (p *PostStore) Delete(ctx context.Context, postId int64) error {
 
 //Update
 /*
-did it by myself, self-explanatory
+for concurrency control, it checks the version, say 2 concurrent user
+comes for update, before update in handler using middleware they would get
+the Post struct, say both the user has version-1 in post struct, 1st user updated
+post, version increased to 1 from 0, but second user has version-0 in his struct as
+both are concurrent user who are doing update at a time, there it will fail, as db has version-1
+2nd user has version-2, there it will block operation of update for second user and will ask for
+retry
 */
 func (p *PostStore) Update(ctx context.Context, post *Post) (error, *Post) {
 	query := `
 				UPDATE posts
 				SET content = $1, 
-				title = $2 
-				where id=$3
-				RETURNING  title,content`
+				title = $2 ,version= version+1
+				where id=$3 and version = $4
+				RETURNING  title,content,version`
 
 	//this part only I missed, while doing
 	var postVar *Post = post
@@ -138,9 +149,30 @@ func (p *PostStore) Update(ctx context.Context, post *Post) (error, *Post) {
 	err := p.db.QueryRowContext(ctx, query,
 		post.Content,
 		post.Title,
-		post.ID).Scan(&postVar.Title, &postVar.Content)
+		post.ID, post.Version).Scan(&postVar.Title, &postVar.Content, &postVar.Version)
 	if err != nil {
-		return err, nil
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrNoRows, nil
+		//copy paste from GPT, dont panic for rest of the switch-case
+		case err.(*pq.Error) != nil:
+			var pqErr *pq.Error
+			errors.As(err, &pqErr) //read about errors.As in GPT
+			switch pqErr.Code {
+			case "40001": // Serialization failure (retry recommended)
+				return ErrSerializationFailure, nil
+			case "23505": // Unique constraint violation
+				return ErrUniqueViolation, nil
+			case "40P01": // Deadlock detected
+				return ErrDeadlock, nil
+			default:
+				return err, nil
+			}
+
+		default:
+			return err, nil
+		}
+
 	}
 	return nil, postVar
 }

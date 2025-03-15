@@ -11,7 +11,10 @@ import (
 this var will contain all the SQL related error
 */
 var (
-	ErrNoRows = errors.New("no rows in result set")
+	ErrNoRows               = errors.New("no rows in result set")
+	ErrSerializationFailure = errors.New("serialization failure")
+	ErrUniqueViolation      = errors.New("unique constraint violation")
+	ErrDeadlock             = errors.New("deadlock detected")
 )
 
 /*
