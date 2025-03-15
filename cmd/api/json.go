@@ -65,3 +65,15 @@ func writeJSONError(w http.ResponseWriter, status int, message string) error {
 	}
 	return writeJSON(w, status, envelope{Error: message})
 }
+
+//writeJSONWrapper
+/*
+This is a wrapper to wrap around the response coming from writeJSON
+in envelop struct.
+*/
+func writeJSONWrapper(w http.ResponseWriter, status int, data any) error {
+	type envelope struct {
+		Data any `json:"data"`
+	}
+	return writeJSON(w, status, envelope{Data: data})
+}

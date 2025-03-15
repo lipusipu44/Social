@@ -19,7 +19,7 @@ func (app *application) healthCheckHandler(w http.ResponseWriter, r *http.Reques
 
 	// call writeJSON wrapper from json.go for better json response handling
 	if err := writeJSON(w, http.StatusOK, response); err != nil {
-		writeJSONError(w, http.StatusInternalServerError, err.Error())
+		writeJSONWrapper(w, http.StatusInternalServerError, err.Error())
 	}
 
 }
