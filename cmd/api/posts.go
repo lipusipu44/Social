@@ -220,7 +220,8 @@ const postKey contextKey = "post"
 In Go (Golang), a handler function is used in web development to handle HTTP requests
 
 typically middleware is a medium by which handler tops-itself up with
-new information, in this case its Post struct if the logic is able to find a post-struct
+new information, in this case its Post struct if the logic is able to find a post-struct, then middleware
+handler take it inside itself.
 
 next handler is kind of boggy which now will contain Post struct in itself, so wherever
 another handler call will happen, it will take the data out of this handler and use it.

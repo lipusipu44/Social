@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 )
 
 // ErrNoRows
@@ -15,6 +16,9 @@ var (
 	ErrSerializationFailure = errors.New("serialization failure")
 	ErrUniqueViolation      = errors.New("unique constraint violation")
 	ErrDeadlock             = errors.New("deadlock detected")
+
+	//will timeout the query execution post 10 sec, used in all store classes
+	QueryTimeout = time.Second * 10
 )
 
 /*

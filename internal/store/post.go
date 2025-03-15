@@ -55,6 +55,19 @@ values ($1, $2, $3, $4) RETURNING id,created_at,updated_at`
 		above return part is used in scan section below
 	*/
 	/*
+		here ctx is not used directly in timeout, its
+		used inside and that ctx will be carry forward,
+
+		check details of WithTimeout cancel is a func type,
+		dats why we can use defer cancel()
+		def:
+
+		func WithTimeout(parent Context, timeout time.Duration) (Context, CancelFunc)
+		type CancelFunc func()
+	*/
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeout)
+	defer cancel()
+	/*
 		$1,$2... order is called in the same way mentioned in INSERT query above
 		in below line.
 	*/
@@ -81,6 +94,19 @@ values ($1, $2, $3, $4) RETURNING id,created_at,updated_at`
 
 func (p *PostStore) GetByID(ctx context.Context, id int64) (*Post, error) {
 	query := `SELECT id,title,user_id,content,created_at,tags,updated_at,version FROM posts WHERE id = $1`
+	/*
+		here ctx is not used directly in timeout, its
+		used inside and that ctx will be carry forward,
+
+		check details of WithTimeout cancel is a func type,
+		dats why we can use defer cancel()
+		def:
+
+		func WithTimeout(parent Context, timeout time.Duration) (Context, CancelFunc)
+		type CancelFunc func()
+	*/
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeout)
+	defer cancel()
 	var postVar Post
 	err := p.db.QueryRowContext(ctx,
 		query, id).Scan(
@@ -109,6 +135,20 @@ delete the post based on post id
 */
 func (p *PostStore) Delete(ctx context.Context, postId int64) error {
 	query := `DELETE FROM posts WHERE id = $1`
+
+	/*
+		here ctx is not used directly in timeout, its
+		used inside and that ctx will be carry forward,
+
+		check details of WithTimeout cancel is a func type,
+		dats why we can use defer cancel()
+		def:
+
+		func WithTimeout(parent Context, timeout time.Duration) (Context, CancelFunc)
+		type CancelFunc func()
+	*/
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeout)
+	defer cancel()
 	res, err := p.db.ExecContext(ctx, query, postId)
 	if err != nil {
 		return err
@@ -143,7 +183,21 @@ func (p *PostStore) Update(ctx context.Context, post *Post) (error, *Post) {
 				where id=$3 and version = $4
 				RETURNING  title,content,version`
 
-	//this part only I missed, while doing
+	/*
+		here ctx is not used directly in timeout, its
+		used inside and that ctx will be carry forward,
+
+		check details of WithTimeout cancel is a func type,
+		dats why we can use defer cancel()
+		def:
+
+		func WithTimeout(parent Context, timeout time.Duration) (Context, CancelFunc)
+		type CancelFunc func()
+	*/
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeout)
+	defer cancel()
+
+	//this part only I was confused, while doing
 	var postVar *Post = post
 
 	err := p.db.QueryRowContext(ctx, query,
