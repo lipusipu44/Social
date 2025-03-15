@@ -40,6 +40,7 @@ type Storage struct {
 	}
 
 	Comment interface {
+		Create(ctx context.Context, comment *Comment) error
 		GetCommentOfUserOnPost(ctx context.Context, postId int64) ([]*Comment, error)
 	}
 }

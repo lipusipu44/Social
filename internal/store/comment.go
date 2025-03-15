@@ -75,3 +75,22 @@ func (c *CommentStore) GetCommentOfUserOnPost(ctx context.Context, postId int64)
 	}
 	return comments, nil
 }
+
+func (c *CommentStore) Create(ctx context.Context, comment *Comment) error {
+	query := `
+INSERT INTO comments(post_id, user_id, content) values ($1,$2,$3)
+returning id,created_at;
+`
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeout)
+	defer cancel()
+
+	err := c.db.QueryRowContext(ctx, query,
+		comment.PostID,
+		comment.UserID,
+		comment.Content).
+		Scan(&comment.ID, &comment.CreatedAt)
+	if err != nil {
+		return err
+	}
+	return nil
+}

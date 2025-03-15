@@ -33,8 +33,7 @@ func (s *UserStore) Create(ctx context.Context, user *User) error {
 		user.Username,
 		user.Password,
 	).Scan(&user.ID,
-		&user.Created,
-		&user.Password)
+		&user.Created)
 	if err != nil {
 		return err
 	}
