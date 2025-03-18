@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"errors"
 )
 
 type User struct {
@@ -38,4 +39,20 @@ func (s *UserStore) Create(ctx context.Context, user *User) error {
 		return err
 	}
 	return nil
+}
+
+func (u *UserStore) GetByID(ctx context.Context, id int64) (*User, error) {
+	var userVar User
+	query := `SELECT id,username,email,password,created_at FROM users WHERE id = $1`
+	err := u.db.QueryRowContext(ctx, query, id).Scan(&userVar.ID, &userVar.Username, &userVar.Email, &userVar.Password, &userVar.Created)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrNoRows
+		default:
+			return nil, err
+		}
+
+	}
+	return &userVar, nil
 }
