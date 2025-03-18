@@ -98,7 +98,10 @@ func (app *application) mount() http.Handler {
 
 		r.Route("/users", func(r chi.Router) {
 			r.Route("/{userId}", func(r chi.Router) {
+				//use of get user from id middleware
+				r.Use(app.userMiddleWare)
 				r.Get("/", app.getUserById)
+				r.Put("/follow", app.followUserHandler)
 			})
 		})
 	})

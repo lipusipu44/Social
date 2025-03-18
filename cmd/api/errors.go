@@ -37,3 +37,8 @@ func (app *application) conflictResponse(w http.ResponseWriter, r *http.Request,
 	log.Printf("deadlock detected: %s, path: %s, error: %s", r.Method, r.URL.Path, err.Error())
 	writeJSONError(w, http.StatusConflict, "deadlock detected, please retry")
 }
+
+func (app *application) uniqueContraintConflictResponse(w http.ResponseWriter, r *http.Request, err error) {
+	log.Printf("unique error detected: %s, path: %s, error: %s", r.Method, r.URL.Path, err.Error())
+	writeJSONError(w, http.StatusConflict, "unique key violation error detected")
+}
