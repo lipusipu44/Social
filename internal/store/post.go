@@ -37,6 +37,12 @@ type Post struct {
 		update will happen, and it will increase the version in each update"
 	*/
 	Comment []*Comment `json:"comments"` //comment not part of post table, just for showing comments on posts
+	User    User       `json:"user"`
+}
+
+type PostWithMetaData struct {
+	Post
+	Commentcount int `json:"comment_count"`
 }
 
 func (p *PostStore) Create(ctx context.Context, post *Post) error {
@@ -229,4 +235,54 @@ func (p *PostStore) Update(ctx context.Context, post *Post) (error, *Post) {
 
 	}
 	return nil, postVar
+}
+
+//GetUserFeed
+/*
+here big query is used, but imp part to check is
+PostMetaData struct post struct, but insted of doing
+postmetadata.post.id we can do directly postmetadata.id which
+will point to post's id field, this I was not aware
+*/
+func (p *PostStore) GetUserFeed(ctx context.Context, id int64) ([]*PostWithMetaData, error) {
+	query := `
+SELECT
+    p.id, p.user_id, p.title, p.content, p.created_at, p.version, p.tags,
+    u.username,
+    COUNT(c.id) AS comments_count
+FROM posts p
+LEFT JOIN comments c ON c.post_id = p.id
+LEFT JOIN users u ON p.user_id = u.id
+JOIN followers f ON f.follower_id = p.user_id OR p.user_id = $1
+WHERE f.user_id = $1 OR p.user_id = $1
+GROUP BY p.id, u.username
+ORDER BY p.created_at DESC;
+`
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeout)
+	defer cancel()
+
+	rows, err := p.db.QueryContext(ctx, query, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	//here bit of changes to capture the array of feeds
+	var postMetaVars []*PostWithMetaData
+	for rows.Next() {
+		var p PostWithMetaData
+		err = rows.Scan(&p.ID,
+			&p.UserID,
+			&p.Title,
+			&p.Content,
+			&p.Created,
+			&p.Version,
+			pq.Array(&p.Tags),
+			&p.User.Username,
+			&p.Commentcount)
+		if err != nil {
+			return nil, err
+		}
+		postMetaVars = append(postMetaVars, &p)
+	}
+	return postMetaVars, nil
 }
