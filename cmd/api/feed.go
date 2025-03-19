@@ -4,6 +4,7 @@ import "net/http"
 
 func (app *application) getUserFeedHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	//value is temporarily hard coded, to be removed in auth section
 	feed, err := app.store.Post.GetUserFeed(ctx, int64(12))
 	if err != nil {
 		app.internalServerError(w, r, err)
