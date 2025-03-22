@@ -243,8 +243,10 @@ here big query is used, but imp part to check is
 PostMetaData struct post struct, but insted of doing
 postmetadata.post.id we can do directly postmetadata.id which
 will point to post's id field, this I was not aware
+
+change:= we are fetching the value from fq pagination feed
 */
-func (p *PostStore) GetUserFeed(ctx context.Context, id int64) ([]*PostWithMetaData, error) {
+func (p *PostStore) GetUserFeed(ctx context.Context, id int64, fq Pagination) ([]*PostWithMetaData, error) {
 	query := `
 SELECT
     p.id, p.user_id, p.title, p.content, p.created_at, p.version, p.tags,
@@ -256,12 +258,14 @@ LEFT JOIN users u ON p.user_id = u.id
 JOIN followers f ON f.follower_id = p.user_id OR p.user_id = $1
 WHERE f.user_id = $1 OR p.user_id = $1
 GROUP BY p.id, u.username
-ORDER BY p.created_at DESC;
+ORDER BY p.created_at ` + fq.SortBy + `
+LIMIT $2 OFFSET $3; 
 `
+	//above query order by does not work with $2
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeout)
 	defer cancel()
 
-	rows, err := p.db.QueryContext(ctx, query, id)
+	rows, err := p.db.QueryContext(ctx, query, id, fq.Limit, fq.Offset)
 	if err != nil {
 		return nil, err
 	}
