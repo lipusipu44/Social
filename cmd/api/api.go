@@ -1,9 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/lipusipu44/Social/docs" //required to generate swagger doc
 	"github.com/lipusipu44/Social/internal/store"
+
+	//imported the middleware for swagger
+	httpSwagger "github.com/swaggo/http-swagger/v2"
 	"log"
 	"net/http"
 	"time"
@@ -34,6 +39,8 @@ type config struct {
 	dbConfig dbConfig
 	//as of now below I am using it in health check API response
 	env string
+	//added for swagger doc
+	apiURL string
 }
 
 //application
@@ -68,6 +75,7 @@ chi.NewRouter() returns *chi.Mux which implements ServeHTTP,
 so do handler too, so instead of returning chi.Mux we
 would return http.Handler
 */
+
 func (app *application) mount() http.Handler {
 	r := chi.NewRouter()
 
@@ -82,6 +90,31 @@ func (app *application) mount() http.Handler {
 	// processing should be stopped.
 	r.Use(middleware.Timeout(60 * time.Second))
 	r.Route("/v1", func(r chi.Router) {
+		/*
+			Below section, we are doing a setup for swagger doc initiation
+			all swag init doc to be there in the docs folder
+
+			the description of swagger is added in main.go's main(), thats kinda
+			intro for swagger doc
+
+			gen-docs - this part is added in makefile to generate swagger doc for cmd and internal
+			package in docs folder in this project.
+
+			make gen-docs - created the doc in docs package, this is going to be a part of air.toml file to
+			start it for each change for new doc creation
+
+			pre_cmd = ["make gen-docs"] - to be added in air.toml file to create the docs everytime air
+			starts running
+
+			if all goes good - http://localhost:8080/v1/swagger/index.html will open basic swagger page
+			I think this localhost:8080 comes from docs.SwaggerInfo.Host =apiURL
+			which is mentioned in config, this is initiated in run()
+			of api.go
+		*/
+		docsURL := fmt.Sprintf("%s/swagger/doc.json", app.config.addr)
+		r.Get("/swagger/*", httpSwagger.Handler(
+			httpSwagger.URL(docsURL), //The url pointing to API definition
+		))
 		r.Get("/health", app.healthCheckHandler)
 
 		r.Route("/posts", func(r chi.Router) {
@@ -125,6 +158,16 @@ Imp - Here also return type instead of using *http.ServeMux we are using
 http.Handler as both implements ServeHTTP method
 */
 func (app *application) run(mux http.Handler) error {
+	/*
+		imp - first run swagger init, then the doc will be created in docs folder,
+		then add docs.swaggerinfo section here and also import the doc folder
+		in import section on top, ensure doc section is not by-default swagger given folder
+		I changed it to github.com/lipusipu44/Social/docs
+	*/
+	//swag doc related
+	docs.SwaggerInfo.Version = version
+	docs.SwaggerInfo.Host = app.config.apiURL
+	docs.SwaggerInfo.BasePath = "/v1"
 
 	srv := &http.Server{
 		Addr:    app.config.addr,

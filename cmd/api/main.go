@@ -31,6 +31,25 @@ func init() {
 	CustomValidate = validator.New(validator.WithRequiredStructEnabled())
 }
 
+/*
+Below all comments are used for swagger doc
+*/
+//	@title			Gopher Social API
+//	@description	This is a Gopher Social.
+//	@termsOfService	http://swagger.io/terms/
+
+//	@contact.name	API Support
+//	@contact.url	http://www.swagger.io/support
+//	@contact.email	support@swagger.io
+
+//	@license.name	Apache 2.0
+//	@license.url	http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @BasePath					/v1
+// @securityDefinitions.apikey	ApiKeyAuth
+// @in							header
+// @name						Authorization
+// @description
 func main() {
 	cfg := config{
 		/*
@@ -49,6 +68,8 @@ func main() {
 			maxIdleTime:  env.GetEnv("DB_MAX_IDLE_TIME", "15m"),
 		},
 		env: env.GetEnv("API_ENV", "dev"),
+		//added for swagger doc
+		apiURL: env.GetEnv("EXTERNAL_URL", "localhost:8081"),
 	}
 	/*
 		creating db instance from db.go in internal/db package,
