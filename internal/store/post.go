@@ -240,13 +240,16 @@ func (p *PostStore) Update(ctx context.Context, post *Post) (error, *Post) {
 //GetUserFeed
 /*
 here big query is used, but imp part to check is
-PostMetaData struct post struct, but insted of doing
+PostMetaData struct's post struct, instead of doing
 postmetadata.post.id we can do directly postmetadata.id which
-will point to post's id field, this I was not aware
+will internally point to post's id field, this I was not aware
 
 change:= we are fetching the value from fq pagination feed
+and some more fields are added
+for filter in the URL params
 */
 func (p *PostStore) GetUserFeed(ctx context.Context, id int64, fq Pagination) ([]*PostWithMetaData, error) {
+	//as of now after the change the query is not working
 	query := `
 SELECT
     p.id, p.user_id, p.title, p.content, p.created_at, p.version, p.tags,
@@ -256,16 +259,20 @@ FROM posts p
 LEFT JOIN comments c ON c.post_id = p.id
 LEFT JOIN users u ON p.user_id = u.id
 JOIN followers f ON f.follower_id = p.user_id OR p.user_id = $1
-WHERE f.user_id = $1 OR p.user_id = $1
+WHERE
+    f.user_id = $1 AND
+    (p.title ILIKE '%' || $4 || '%' OR p.content ILIKE '%' || $4 || '%') AND
+    (p.tags @> $5 OR $5 = '{}')
 GROUP BY p.id, u.username
 ORDER BY p.created_at ` + fq.SortBy + `
-LIMIT $2 OFFSET $3; 
+LIMIT $2 OFFSET $3
 `
+
 	//above query order by does not work with $2
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeout)
 	defer cancel()
 
-	rows, err := p.db.QueryContext(ctx, query, id, fq.Limit, fq.Offset)
+	rows, err := p.db.QueryContext(ctx, query, id, fq.Limit, fq.Offset, fq.Search, pq.Array(fq.Tags))
 	if err != nil {
 		return nil, err
 	}
