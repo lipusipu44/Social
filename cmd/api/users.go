@@ -9,6 +9,20 @@ import (
 	"strconv"
 )
 
+//getUserById goDoc
+
+// @Summary		Get user by ID
+// @Description	Fetches the user details from the middleware and returns the user data in JSON format.
+// @Tags			Users
+// @Accept			json
+// @Produce		json
+// @Param			userId	path		string		true	"User ID"
+// @Success		200		{object}	store.User	"Successfully retrieved user"
+// @Failure		400		{object}	error		"Bad request"
+// @Failure		404		{object}	error		"User not found"
+// @Failure		500		{object}	error		"Internal server error"
+// @Security		ApiKeyAuth
+// @Router			/users/{userId} [get]
 func (app *application) getUserById(w http.ResponseWriter, r *http.Request) {
 	userStruct := getUserfromMiddleWare(r)
 

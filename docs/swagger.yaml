@@ -1,4 +1,16 @@
 basePath: /v1
+definitions:
+  store.User:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      username:
+        type: string
+    type: object
 info:
   contact:
     email: support@swagger.io
@@ -10,7 +22,61 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
   title: Gopher Social API
-paths: {}
+paths:
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: Returns the status of the API along with environment and version
+        details.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: API is healthy
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema: {}
+      summary: Health Check
+      tags:
+      - Health
+  /users/{userId}:
+    get:
+      consumes:
+      - application/json
+      description: Fetches the user details from the middleware and returns the user
+        data in JSON format.
+      parameters:
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved user
+          schema:
+            $ref: '#/definitions/store.User'
+        "400":
+          description: Bad request
+          schema: {}
+        "404":
+          description: User not found
+          schema: {}
+        "500":
+          description: Internal server error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Get user by ID
+      tags:
+      - Users
 securityDefinitions:
   ApiKeyAuth:
     in: header
