@@ -5,6 +5,7 @@ import (
 	db2 "github.com/lipusipu44/Social/internal/db"
 	"github.com/lipusipu44/Social/internal/env"
 	"github.com/lipusipu44/Social/internal/store"
+	"go.uber.org/zap"
 	"log"
 )
 
@@ -51,6 +52,12 @@ Below all comments are used for swagger doc
 // @name						Authorization
 // @description
 func main() {
+	/*
+		Introduction of proper structured logging using ZAP
+	*/
+	logger := zap.Must(zap.NewProduction())
+	defer logger.Sync() // to flush out the buffer
+
 	cfg := config{
 		/*
 			now hardcoded value to be replaced by env values
@@ -83,13 +90,15 @@ func main() {
 		log.Fatal(err)
 	}
 	defer db.Close()
-	log.Println("DB Connection Pool Established")
+	logger.Info("DB Connection Pool Established")
 	//creating SQL storage and then pass it to api struct
 	storage := store.NewStorage(db)
 
 	app := application{
 		config: cfg,
 		store:  storage,
+		//passing logger to app
+		zapLogger: logger,
 	}
 	//mount is initialized to accommodate HTTP calls
 
@@ -100,5 +109,5 @@ func main() {
 		methods
 	*/
 	mux := app.mount()
-	log.Fatal(app.run(mux))
+	logger.Fatal("Issue in starting APP server", zap.Error(app.run(mux)))
 }

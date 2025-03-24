@@ -6,6 +6,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/lipusipu44/Social/docs" //required to generate swagger doc
 	"github.com/lipusipu44/Social/internal/store"
+	"go.uber.org/zap"
 
 	//imported the middleware for swagger
 	httpSwagger "github.com/swaggo/http-swagger/v2"
@@ -61,6 +62,8 @@ type application struct {
 	method will get the payload and params from context of handler
 	*/
 	store store.Storage //meaning Storage struct from store package
+	//adding ZAP logger object here, so anyone in handler and cmd can use it
+	zapLogger *zap.Logger
 }
 
 /*
