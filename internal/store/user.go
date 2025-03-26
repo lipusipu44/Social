@@ -4,14 +4,40 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
-	ID       int64  `json:"id"`
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Password string `json:"-"`
-	Created  string `json:"created_at"`
+	ID       int64    `json:"id"`
+	Username string   `json:"username"`
+	Email    string   `json:"email"`
+	Password password `json:"-"` //changes from string to password struct
+	Created  string   `json:"created_at"`
+}
+
+/*
+now password will contain plain password and the hash,
+hashing is done in below Hash method
+*/
+type password struct {
+	text *string `json:"-"`
+	hash []byte  `json:"-"`
+}
+
+//Hash
+/*
+below method gets the password string from handler class
+and stores both plain pwd and hash in the password struct
+*/
+func (p *password) Hash(pswd string) error {
+	hash, err := bcrypt.GenerateFromPassword([]byte(pswd), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	//store the password and hash in below 2 lines
+	p.text = &pswd
+	p.hash = hash
+	return nil
 }
 
 //UserStore
@@ -55,4 +81,13 @@ func (u *UserStore) GetByID(ctx context.Context, id int64) (*User, error) {
 
 	}
 	return &userVar, nil
+}
+
+func (u *UserStore) CreateAndInvite(ctx context.Context, user *User, token string) error {
+	//transaction wrapper - it has 2 tasks
+	//create the user
+	//create the user invite
+	//if one of them fails rollback both the transaction with sql transaction
+
+	return nil
 }

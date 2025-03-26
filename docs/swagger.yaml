@@ -1,5 +1,21 @@
 basePath: /v1
 definitions:
+  main.RegisterUserPayload:
+    properties:
+      email:
+        maxLength: 72
+        type: string
+      password:
+        maxLength: 32
+        type: string
+      username:
+        maxLength: 32
+        type: string
+    required:
+    - email
+    - password
+    - username
+    type: object
   store.User:
     properties:
       created_at:
@@ -23,6 +39,34 @@ info:
   termsOfService: http://swagger.io/terms/
   title: Gopher Social API
 paths:
+  /authentication/user:
+    post:
+      consumes:
+      - application/json
+      description: Registers a user
+      parameters:
+      - description: User credentials
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.RegisterUserPayload'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User registered
+          schema:
+            $ref: '#/definitions/store.User'
+        "400":
+          description: Bad Request
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      summary: Registers a user
+      tags:
+      - authentication
   /health:
     get:
       consumes:

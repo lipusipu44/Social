@@ -82,7 +82,7 @@ would return http.Handler
 func (app *application) mount() http.Handler {
 	r := chi.NewRouter()
 
-	// A good base middleware stack, no explanation use GPT
+	// A good base middleware stack, no explanation, used GPT
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
@@ -95,9 +95,9 @@ func (app *application) mount() http.Handler {
 	r.Route("/v1", func(r chi.Router) {
 		/*
 			Below section, we are doing a setup for swagger doc initiation
-			all swag init doc to be there in the docs folder
+			all swag init doc to be there in the docs folder in framework
 
-			the description of swagger is added in main.go's main(), thats kinda
+			the first description of swagger is added in main.go's main(), thats kinda
 			intro for swagger doc
 
 			gen-docs - this part is added in makefile to generate swagger doc for cmd and internal
@@ -142,6 +142,11 @@ func (app *application) mount() http.Handler {
 			//read more about group
 			r.Group(func(r chi.Router) {
 				r.Get("/feed", app.getUserFeedHandler)
+			})
+
+			//Future only public route
+			r.Route("/authentication", func(r chi.Router) {
+				r.Post("/user", app.registerUserHandler)
 			})
 		})
 
