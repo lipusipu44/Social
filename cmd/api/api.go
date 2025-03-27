@@ -35,13 +35,18 @@ type dbConfig struct {
 	maxIdleConns int
 	maxIdleTime  string
 }
+
+type mailConfig struct {
+	exp time.Duration
+}
 type config struct {
 	addr     string
 	dbConfig dbConfig
 	//as of now below I am using it in health check API response
 	env string
 	//added for swagger doc
-	apiURL string
+	apiURL   string
+	mailConf mailConfig // all details of mail
 }
 
 //application
@@ -144,10 +149,11 @@ func (app *application) mount() http.Handler {
 				r.Get("/feed", app.getUserFeedHandler)
 			})
 
-			//Future only public route
-			r.Route("/authentication", func(r chi.Router) {
-				r.Post("/user", app.registerUserHandler)
-			})
+		})
+
+		//Future only public route, moved it out of authentication
+		r.Route("/authentication", func(r chi.Router) {
+			r.Post("/user", app.registerUserHandler)
 		})
 
 	})

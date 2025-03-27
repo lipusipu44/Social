@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"golang.org/x/crypto/bcrypt"
+	"time"
 )
 
 type User struct {
@@ -49,12 +50,14 @@ type UserStore struct {
 	db *sql.DB
 }
 
-func (s *UserStore) Create(ctx context.Context, user *User) error {
+// Create
+// replaced s.db with tx in QueryRowContext
+func (s *UserStore) Create(ctx context.Context, tx *sql.Tx, user *User) error {
 	query := `
 				INSERT INTO users (email, username, password) VALUES ($1, $2, $3)
 				RETURNING id,created_at
 				`
-	err := s.db.QueryRowContext(ctx,
+	err := tx.QueryRowContext(ctx,
 		query,
 		user.Email,
 		user.Username,
@@ -62,7 +65,14 @@ func (s *UserStore) Create(ctx context.Context, user *User) error {
 	).Scan(&user.ID,
 		&user.Created)
 	if err != nil {
-		return err
+		switch {
+		case err.Error() == `pq: duplicate key value violates unique constraint "users_email_key"`:
+			return ErrDuplicateEmail
+		case err.Error() == `pq: duplicate key value violates unique constraint "users_username_key"`:
+			return ErrDuplicateUsername
+		default:
+			return err
+		}
 	}
 	return nil
 }
@@ -83,11 +93,44 @@ func (u *UserStore) GetByID(ctx context.Context, id int64) (*User, error) {
 	return &userVar, nil
 }
 
-func (u *UserStore) CreateAndInvite(ctx context.Context, user *User, token string) error {
+func (u *UserStore) CreateAndInvite(ctx context.Context, user *User, token string, invitationExp time.Duration) error {
 	//transaction wrapper - it has 2 tasks
-	//create the user
-	//create the user invite
-	//if one of them fails rollback both the transaction with sql transaction
+	/*
+		This below method looks confusing, but its a normal method call
+		like others withTxn returns an error so we called it as per
+		this func signature, in withTxn method it needs a func, with param as
+		txn and that's what we did the logic for and if there is an error then txn
+		roll back happens, so basically this func calls user Create and sendInvite
+		both the logic and if any error then it sends the error to withTxn in Store
+		.go file
 
+		Basically, withTxn needs a function and if that function generates the error
+		then it rolls back the txn accordingly
+	*/
+	return withTxn(u.db, ctx, func(tx *sql.Tx) error {
+		//create the user
+		if err := u.Create(ctx, tx, user); err != nil {
+			return err
+		}
+		//create the user invite
+		//if one of them fails rollback both the transaction with sql transaction
+		if err := u.CreateUserInvitation(ctx, tx, user.ID, token, invitationExp); err != nil {
+			return err
+		}
+		return nil
+	})
+
+}
+
+func (u *UserStore) CreateUserInvitation(ctx context.Context, tx *sql.Tx, userID int64, token string, invitationExp time.Duration) error {
+	query := `INSERT INTO user_invitations (token,user_id, invitation_exp) VALUES ($3, $1, $2)`
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeout)
+	defer cancel()
+
+	_, err := tx.ExecContext(ctx, query, userID, time.Now().Add(invitationExp), token)
+	if err != nil {
+		return err
+	}
 	return nil
 }

@@ -1,6 +1,10 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"errors"
+	"github.com/google/uuid"
 	"github.com/lipusipu44/Social/internal/store"
 	"net/http"
 )
@@ -56,11 +60,34 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 	}
 	ctx := r.Context()
 
+	/*
+		creating token string using uuid, import it
+		plainToken to be sent to user in email, hashtoken of the same
+		to be stored in DB, once the user authenticates, we will compare
+		plaintoken with hashtoken and allow the user if validated
+	*/
+	planToken := uuid.New().String()
+
+	//store encrypted plainToken in DB
+	hash := sha256.Sum256([]byte(planToken))
+	hashToken := hex.EncodeToString(hash[:])
+
 	//create the user and invite
-	err := app.store.User.CreateAndInvite(ctx, usr, "token-123")
+	err := app.store.User.CreateAndInvite(ctx, usr, hashToken, app.config.mailConf.exp)
 	if err != nil {
-		app.internalServerError(w, r, err)
-		return
+		switch {
+		case errors.Is(err, store.ErrDuplicateEmail):
+			app.badRequestResponse(w, r, err)
+			return
+		case errors.Is(err, store.ErrDuplicateUsername):
+			app.badRequestResponse(w, r, err)
+			return
+		default:
+			app.internalServerError(w, r, err)
+			return
+
+		}
+
 	}
 
 	//send mail - todo

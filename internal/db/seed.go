@@ -75,12 +75,12 @@ func Seed(store store.Storage) { //storage struct in store package
 	ctx := context.Background()
 
 	users := generateUsers(100)
-	for _, user := range users {
+	/*for _, user := range users {
 		if err := store.User.Create(ctx, user); err != nil {
 			log.Println("Error creating user:", user, err)
 			return
 		}
-	}
+	}*/
 
 	posts := generatePosts(100, users)
 	for _, post := range posts {
@@ -109,8 +109,8 @@ func generateUsers(num int) []*store.User {
 	for i := 0; i < num; i++ {
 		users[i] = &store.User{
 			Username: usernames[i%len(usernames)] + fmt.Sprintf("%d", i),
-			Password: "password",
-			Email:    usernames[i%len(usernames)] + fmt.Sprintf("%d", i) + "@example.com",
+			//Password: "password",
+			Email: usernames[i%len(usernames)] + fmt.Sprintf("%d", i) + "@example.com",
 		}
 	}
 	return users

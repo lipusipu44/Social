@@ -7,6 +7,7 @@ import (
 	"github.com/lipusipu44/Social/internal/store"
 	"go.uber.org/zap"
 	"log"
+	"time"
 )
 
 /*
@@ -77,6 +78,10 @@ func main() {
 		env: env.GetEnv("API_ENV", "dev"),
 		//added for swagger doc
 		apiURL: env.GetEnv("EXTERNAL_URL", "localhost:8081"),
+		//adding mail config for invite user logic in auth.go
+		mailConf: mailConfig{
+			exp: time.Hour * 24 * 3,
+		},
 	}
 	/*
 		creating db instance from db.go in internal/db package,
