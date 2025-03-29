@@ -45,5 +45,7 @@ func (app *application) uniqueContraintConflictResponse(w http.ResponseWriter, r
 
 func (app *application) unauthorizedErrorResponse(w http.ResponseWriter, r *http.Request, err error) {
 	app.zapLogger.Error("unauthorized error response", zap.String("METHOD", r.Method), zap.String("path", r.URL.Path), zap.Error(err))
+	//at-least without this I was not getting pop up for admin uid and pwd in browser
+	w.Header().Set("WWW-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
 	writeJSONError(w, http.StatusUnauthorized, "unauthorized error detected")
 }
