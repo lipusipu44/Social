@@ -82,6 +82,13 @@ func main() {
 		mailConf: mailConfig{
 			exp: time.Hour * 24 * 3,
 		},
+		//added config for basic config
+		auth: authConfig{
+			basicConfig: basic{
+				username: env.GetEnv("API_USERNAME", "admin1"),
+				password: env.GetEnv("API_PASSWORD", "admin1"),
+			},
+		},
 	}
 	/*
 		creating db instance from db.go in internal/db package,

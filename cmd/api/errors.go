@@ -42,3 +42,8 @@ func (app *application) uniqueContraintConflictResponse(w http.ResponseWriter, r
 	app.zapLogger.Error("unique Constraint detected error", zap.String("METHOD", r.Method), zap.String("path", r.URL.Path), zap.Error(err))
 	writeJSONError(w, http.StatusConflict, "unique key violation error detected")
 }
+
+func (app *application) unauthorizedErrorResponse(w http.ResponseWriter, r *http.Request, err error) {
+	app.zapLogger.Error("unauthorized error response", zap.String("METHOD", r.Method), zap.String("path", r.URL.Path), zap.Error(err))
+	writeJSONError(w, http.StatusUnauthorized, "unauthorized error detected")
+}

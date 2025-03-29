@@ -39,6 +39,14 @@ type dbConfig struct {
 type mailConfig struct {
 	exp time.Duration
 }
+
+type basic struct {
+	username string
+	password string
+}
+type authConfig struct {
+	basicConfig basic
+}
 type config struct {
 	addr     string
 	dbConfig dbConfig
@@ -47,6 +55,7 @@ type config struct {
 	//added for swagger doc
 	apiURL   string
 	mailConf mailConfig // all details of mail
+	auth     authConfig //used for authentication
 }
 
 //application
@@ -123,7 +132,12 @@ func (app *application) mount() http.Handler {
 		r.Get("/swagger/*", httpSwagger.Handler(
 			httpSwagger.URL(docsURL), //The url pointing to API definition
 		))
-		r.Get("/health", app.healthCheckHandler)
+		/*
+			adding basic auth middleware with healthcheck,
+			this middleware is a bit different as r.With() needs a func(h http.handler) http.handler
+			that's why app.BasicAuth signature is like that
+		*/
+		r.With(app.BasicAuth()).Get("/health", app.healthCheckHandler)
 
 		r.Route("/posts", func(r chi.Router) {
 			r.Post("/", app.createPostHandler)
