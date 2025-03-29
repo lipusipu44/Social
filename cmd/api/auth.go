@@ -15,6 +15,17 @@ type RegisterUserPayload struct {
 	Email    string `json:"email" validate:"required,email,max=72"`
 }
 
+//UserWithToken
+/*
+created this struct to capture the user
+with the token so that can be used to activate it
+using value
+*/
+type UserWithToken struct {
+	*store.User
+	Token string `json:"token"`
+}
+
 // registerUserHandler godoc
 //
 //	@Summary		Registers a user
@@ -23,7 +34,7 @@ type RegisterUserPayload struct {
 //	@Accept			json
 //	@Produce		json
 //	@Param			payload	body		RegisterUserPayload	true	"User credentials"
-//	@Success		201		{object}	store.User			"User registered"
+//	@Success		201		{object}	UserWithToken		"User registered"
 //	@Failure		400		{object}	error
 //	@Failure		500		{object}	error
 //	@Router			/authentication/user [post]
@@ -92,8 +103,16 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 
 	//send mail - todo
 
+	/*
+		used to get the user with token in payload response for temp purpose
+	*/
+	userwithToken := UserWithToken{
+		User:  usr,
+		Token: planToken,
+	}
+
 	//if all good then write it to the response using writer handler
-	if err := writeJSONWrapper(w, http.StatusCreated, nil); err != nil {
+	if err := writeJSONWrapper(w, http.StatusCreated, userwithToken); err != nil {
 		app.internalServerError(w, r, err)
 	}
 }

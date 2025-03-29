@@ -17,5 +17,5 @@ func main() {
 	}
 	defer dbConn.Close()
 	storage := store.NewStorage(dbConn)
-	db2.Seed(storage)
+	db2.Seed(storage, dbConn)
 }

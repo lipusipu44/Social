@@ -2,7 +2,9 @@ package store
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 	"golang.org/x/crypto/bcrypt"
 	"time"
@@ -14,6 +16,7 @@ type User struct {
 	Email    string   `json:"email"`
 	Password password `json:"-"` //changes from string to password struct
 	Created  string   `json:"created_at"`
+	IsActive bool     `json:"is_active"`
 }
 
 /*
@@ -61,7 +64,7 @@ func (s *UserStore) Create(ctx context.Context, tx *sql.Tx, user *User) error {
 		query,
 		user.Email,
 		user.Username,
-		user.Password,
+		user.Password.hash, //earlier used to be plain text now its hashed version
 	).Scan(&user.ID,
 		&user.Created)
 	if err != nil {
@@ -123,12 +126,91 @@ func (u *UserStore) CreateAndInvite(ctx context.Context, user *User, token strin
 }
 
 func (u *UserStore) CreateUserInvitation(ctx context.Context, tx *sql.Tx, userID int64, token string, invitationExp time.Duration) error {
-	query := `INSERT INTO user_invitations (token,user_id, invitation_exp) VALUES ($3, $1, $2)`
+	query := `INSERT INTO user_invitations (token,user_id, expiry) VALUES ($3, $1, $2)`
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeout)
 	defer cancel()
 
 	_, err := tx.ExecContext(ctx, query, userID, time.Now().Add(invitationExp), token)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (u *UserStore) Activate(ctx context.Context, token string) error {
+	return withTxn(u.db, ctx, func(tx *sql.Tx) error {
+		//find the user that this token belongs to
+		user, err := u.getUserFromInvitation(ctx, tx, token)
+		if err != nil {
+			return err
+		}
+		//if found update the user
+		if err := u.updateUser(ctx, tx, user); err != nil {
+			return err
+		}
+		//delete the invitation from user_invitation table
+		if err := u.deleteUSerInvitations(ctx, tx, user.ID); err != nil {
+			return err
+		}
+		return nil
+	})
+}
+
+func (u *UserStore) getUserFromInvitation(ctx context.Context, tx *sql.Tx, token string) (*User, error) {
+	query := `SELECT u.id, u.username, u.email, u.created_at, u.is_active
+		FROM users u
+		JOIN user_invitations ui ON u.id = ui.user_id
+		WHERE ui.token = $1 AND ui.expiry > $2
+				`
+
+	/*
+		below 2 lines will convert normal token to hashToken,
+		as hashtoken is only stored in DB, not token string
+	*/
+
+	hash := sha256.Sum256([]byte(token))
+	hashToken := hex.EncodeToString(hash[:])
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeout)
+	defer cancel()
+
+	var userVar User
+	err := tx.QueryRowContext(ctx, query, hashToken, time.Now()).Scan(
+		&userVar.ID,
+		&userVar.Username,
+		&userVar.Email,
+		&userVar.Created,
+		&userVar.IsActive,
+	)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrNoRows
+		default:
+			return nil, err
+		}
+	}
+	return &userVar, nil
+}
+
+func (u *UserStore) updateUser(ctx context.Context, tx *sql.Tx, user *User) error {
+	query := `Update users set is_active=true where id = $1`
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeout)
+	defer cancel()
+	_, err := tx.ExecContext(ctx, query, user.ID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (u *UserStore) deleteUSerInvitations(ctx context.Context, tx *sql.Tx, id int64) error {
+	query := `DELETE FROM user_invitations WHERE user_id = $1`
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeout)
+	defer cancel()
+
+	_, err := tx.ExecContext(ctx, query, id)
 	if err != nil {
 		return err
 	}

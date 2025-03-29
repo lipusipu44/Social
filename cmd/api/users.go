@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/go-chi/chi/v5"
 	"github.com/lipusipu44/Social/internal/store"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -65,6 +66,39 @@ func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request
 		app.badRequestResponse(w, r, err)
 		return
 	}
+}
+
+// ActivateUser godoc
+//
+//	@Summary		Activates/Register a user
+//	@Description	Activates/Register a user by invitation token
+//	@Tags			users
+//	@Produce		json
+//	@Param			tokenId	path		string	true	"Invitation token"
+//	@Success		204		{string}	string	"User activated"
+//	@Failure		404		{object}	error
+//	@Failure		500		{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/users/activate/{tokenId} [put]
+func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Request) {
+	token := chi.URLParam(r, "tokenId")
+	log.Println("Token: ", token)
+	if err := app.store.User.Activate(r.Context(), token); err != nil {
+		switch {
+		case errors.Is(err, store.ErrNoRows):
+			app.badRequestResponse(w, r, err)
+			return
+		default:
+			app.internalServerError(w, r, err)
+			return
+		}
+	}
+
+	if err := writeJSONWrapper(w, http.StatusOK, nil); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
 }
 
 /*

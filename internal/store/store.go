@@ -44,6 +44,7 @@ type Storage struct {
 		GetByID(ctx context.Context, id int64) (*User, error)
 		//created for invite a user and create it
 		CreateAndInvite(ctx context.Context, user *User, token string, invitationExp time.Duration) error
+		Activate(ctx context.Context, token string) error
 	}
 
 	Comment interface {
@@ -75,7 +76,7 @@ func NewStorage(db *sql.DB) Storage {
 
 /*
 Transaction wrapper function which will be used in user store
-It's used to roll back the transaction if error occurs
+It's used to roll back the transaction if an error occurs
 */
 func withTxn(db *sql.DB, ctx context.Context, f func(*sql.Tx) error) error {
 	tx, err := db.BeginTx(ctx, nil)
@@ -85,6 +86,10 @@ func withTxn(db *sql.DB, ctx context.Context, f func(*sql.Tx) error) error {
 	//now we will use this txn in the fn
 	if err := f(tx); err != nil {
 		_ = tx.Rollback() //ignoring the error as of now
+		return err
+	}
+	err = tx.Commit() //please ensure to commit or it wont reflect in DB
+	if err != nil {
 		return err
 	}
 
