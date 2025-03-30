@@ -4,9 +4,11 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/lipusipu44/Social/internal/store"
 	"net/http"
+	"time"
 )
 
 type RegisterUserPayload struct {
@@ -115,4 +117,76 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 	if err := writeJSONWrapper(w, http.StatusCreated, userwithToken); err != nil {
 		app.internalServerError(w, r, err)
 	}
+}
+
+type CreateUserTokenPayload struct {
+	Email    string `json:"email" validate:"required,email,max=72"`
+	Password string `json:"password" validate:"required,max=32"`
+}
+
+// createTokenHandler godoc
+//
+//	@Summary		Creates a token
+//	@Description	Creates a token for a user
+//	@Tags			authentication
+//	@Accept			json
+//	@Produce		json
+//	@Param			payload	body		CreateUserTokenPayload	true	"User credentials"
+//	@Success		200		{string}	string					"Token"
+//	@Failure		400		{object}	error
+//	@Failure		401		{object}	error
+//	@Failure		500		{object}	error
+//	@Router			/authentication/token [post]
+func (app *application) createTokenHandler(w http.ResponseWriter, r *http.Request) {
+	//parse payload credential
+	var payload CreateUserTokenPayload
+	if err := readJSON(w, r, &payload); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	if err := CustomValidate.Struct(payload); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	//check if user exists with the given email
+	user, err := app.store.User.GetByEmail(r.Context(), payload.Email)
+	if err != nil {
+		switch {
+		case errors.Is(err, store.ErrNoRows):
+			app.unauthorizedErrorResponse(w, r, err)
+			return
+		default:
+			app.internalServerError(w, r, err)
+			return
+		}
+	}
+
+	//if user is there generate token and add claim
+	/*
+		After user is found we take its user id to create the claim using secrets create by our app,
+		user.ID, expiry time. this claim to be used below to create the JWT token
+
+		I checked the token details after decoding it and it looks perfect, sub was matching with user id
+	*/
+	claims := jwt.MapClaims{
+		"sub": user.ID,
+		"exp": time.Now().Add(app.config.auth.jwtConfiguration.expDate).Unix(),
+		"iat": time.Now().Unix(),
+		"nbf": time.Now().Unix(),
+		"iss": app.config.auth.jwtConfiguration.issuer,
+		"aud": app.config.auth.jwtConfiguration.issuer,
+	}
+	token, err := app.authenticator.GenerateToken(claims)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	//if all good then write it to the response using writer handler
+	if err := writeJSONWrapper(w, http.StatusCreated, token); err != nil {
+		app.internalServerError(w, r, err)
+	}
+
 }

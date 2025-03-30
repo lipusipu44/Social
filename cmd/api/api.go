@@ -5,6 +5,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/lipusipu44/Social/docs" //required to generate swagger doc
+	"github.com/lipusipu44/Social/internal/auth"
 	"github.com/lipusipu44/Social/internal/store"
 	"go.uber.org/zap"
 
@@ -45,7 +46,14 @@ type basic struct {
 	password string
 }
 type authConfig struct {
-	basicConfig basic
+	basicConfig      basic
+	jwtConfiguration jwtConfig
+}
+
+type jwtConfig struct {
+	secret  string
+	expDate time.Duration // to be used in claim
+	issuer  string        // to be used in claim
 }
 type config struct {
 	addr     string
@@ -78,6 +86,10 @@ type application struct {
 	store store.Storage //meaning Storage struct from store package
 	//adding ZAP logger object here, so anyone in handler and cmd can use it
 	zapLogger *zap.Logger
+	/*
+		Same concept as store store.Storage part, this is created in internal=> auth
+	*/
+	authenticator auth.Authenticator
 }
 
 /*
@@ -169,6 +181,8 @@ func (app *application) mount() http.Handler {
 		//Future only public route, moved it out of authentication
 		r.Route("/authentication", func(r chi.Router) {
 			r.Post("/user", app.registerUserHandler)
+			//creates JWT Token
+			r.Post("/token", app.createTokenHandler)
 		})
 
 	})

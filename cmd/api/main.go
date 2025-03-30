@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/go-playground/validator/v10"
+	auth2 "github.com/lipusipu44/Social/internal/auth"
 	db2 "github.com/lipusipu44/Social/internal/db"
 	"github.com/lipusipu44/Social/internal/env"
 	"github.com/lipusipu44/Social/internal/store"
@@ -88,6 +89,12 @@ func main() {
 				username: env.GetEnv("API_USERNAME", "admin1"),
 				password: env.GetEnv("API_PASSWORD", "admin1"),
 			},
+			//added all the jwt token configs from env files
+			jwtConfiguration: jwtConfig{
+				secret:  env.GetEnv("JWT_SECRET", "secret"),
+				expDate: time.Hour * 24 * 3, // 3 days
+				issuer:  env.GetEnv("JWT_ISSUER", "gophersocial"),
+			},
 		},
 	}
 	/*
@@ -105,12 +112,19 @@ func main() {
 	logger.Info("DB Connection Pool Established")
 	//creating SQL storage and then pass it to api struct
 	storage := store.NewStorage(db)
+	/*
+		Creation of JWTAuthenticator and use it in app like storage is created
+	*/
+	jwtAuthenticator := auth2.NewJWTAuthenticator(cfg.auth.jwtConfiguration.secret,
+		cfg.auth.jwtConfiguration.issuer,
+		cfg.auth.jwtConfiguration.issuer)
 
 	app := application{
 		config: cfg,
 		store:  storage,
 		//passing logger to app
-		zapLogger: logger,
+		zapLogger:     logger,
+		authenticator: jwtAuthenticator,
 	}
 	//mount is initialized to accommodate HTTP calls
 

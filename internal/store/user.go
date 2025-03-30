@@ -82,7 +82,7 @@ func (s *UserStore) Create(ctx context.Context, tx *sql.Tx, user *User) error {
 
 func (u *UserStore) GetByID(ctx context.Context, id int64) (*User, error) {
 	var userVar User
-	query := `SELECT id,username,email,password,created_at FROM users WHERE id = $1`
+	query := `SELECT id,username,email,password,created_at FROM users WHERE id = $1 and is_active = true`
 	err := u.db.QueryRowContext(ctx, query, id).Scan(&userVar.ID, &userVar.Username, &userVar.Email, &userVar.Password, &userVar.Created)
 	if err != nil {
 		switch {
@@ -92,6 +92,40 @@ func (u *UserStore) GetByID(ctx context.Context, id int64) (*User, error) {
 			return nil, err
 		}
 
+	}
+	return &userVar, nil
+}
+
+//GetByEmail
+/*
+Simple method to use txn to get the user by checking the email
+in the table
+*/
+func (u *UserStore) GetByEmail(ctx context.Context, email string) (*User, error) {
+	var userVar User
+	query := `SELECT id,username,email,created_at
+			  FROM users WHERE email = $1
+			  and is_active = true`
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeout)
+	defer cancel()
+
+	tx, err := u.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	err = tx.QueryRowContext(ctx, query, email).Scan(&userVar.ID, &userVar.Username, &userVar.Email, &userVar.Created)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			err := tx.Rollback()
+			if err != nil {
+				return nil, err
+			}
+			return nil, ErrNoRows
+		default:
+			return nil, err
+		}
 	}
 	return &userVar, nil
 }
