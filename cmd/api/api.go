@@ -52,8 +52,8 @@ type authConfig struct {
 
 type jwtConfig struct {
 	secret  string
-	expDate time.Duration // to be used in claim
-	issuer  string        // to be used in claim
+	expDate time.Duration // to be used in claim of JWT
+	issuer  string        // to be used in claim of JWT
 }
 type config struct {
 	addr     string
@@ -152,6 +152,7 @@ func (app *application) mount() http.Handler {
 		r.With(app.BasicAuth()).Get("/health", app.healthCheckHandler)
 
 		r.Route("/posts", func(r chi.Router) {
+			r.Use(app.AuthTokenMiddleware) // in middleware.go class, as its generic use
 			r.Post("/", app.createPostHandler)
 
 			r.Route("/{postId}", func(r chi.Router) {
@@ -167,12 +168,13 @@ func (app *application) mount() http.Handler {
 			r.Put("/activate/{tokenId}", app.activateUserHandler)
 			r.Route("/{userId}", func(r chi.Router) {
 				//use of get user from id middleware
-				r.Use(app.userMiddleWare)
+				r.Use(app.AuthTokenMiddleware)
 				r.Get("/", app.getUserById)
 				r.Put("/follow", app.followUserHandler)
 			})
 			//read more about group
 			r.Group(func(r chi.Router) {
+				r.Use(app.AuthTokenMiddleware)
 				r.Get("/feed", app.getUserFeedHandler)
 			})
 

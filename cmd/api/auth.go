@@ -168,7 +168,7 @@ func (app *application) createTokenHandler(w http.ResponseWriter, r *http.Reques
 		After user is found we take its user id to create the claim using secrets create by our app,
 		user.ID, expiry time. this claim to be used below to create the JWT token
 
-		I checked the token details after decoding it and it looks perfect, sub was matching with user id
+		I checked the token details after decoding it and it looks perfect, sub was matched with user id
 	*/
 	claims := jwt.MapClaims{
 		"sub": user.ID,

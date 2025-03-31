@@ -31,6 +31,20 @@ type createPostPayload struct {
 	Tags    []string `json:"tags"`
 }
 
+// CreatePost godoc
+//
+//	@Summary		Creates a post
+//	@Description	Creates a post
+//	@Tags			posts
+//	@Accept			json
+//	@Produce		json
+//	@Param			payload	body		createPostPayload	true	"Post payload"
+//	@Success		201		{object}	store.Post
+//	@Failure		400		{object}	error
+//	@Failure		401		{object}	error
+//	@Failure		500		{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/posts [post]
 func (app *application) createPostHandler(res http.ResponseWriter, req *http.Request) {
 	var payload createPostPayload
 	if err := readJSON(res, req, &payload); err != nil {
@@ -45,12 +59,13 @@ func (app *application) createPostHandler(res http.ResponseWriter, req *http.Req
 		app.badRequestResponse(res, req, err)
 		return
 	}
+	usr := getUserfromMiddleWare(req)
 	/*
 		It needs a min payload of Post struct which are required in Create method
 		of post in insertion query.
 	*/
 	post := &store.Post{
-		UserID:  1,
+		UserID:  usr.ID, //changed from hardcoded value to get the value from middleware
 		Content: payload.Content,
 		Title:   payload.Title,
 		Tags:    payload.Tags,
@@ -101,6 +116,20 @@ in posts.go in cmd/api package.
 
 Update : In this branch it also gets the comment used on that post_id
 */
+
+// GetPost godoc
+//
+//	@Summary		Fetches a post
+//	@Description	Fetches a post by ID
+//	@Tags			posts
+//	@Accept			json
+//	@Produce		json
+//	@Param			postId	path		string	true	"Post ID"
+//	@Success		200		{object}	store.Post
+//	@Failure		404		{object}	error
+//	@Failure		500		{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/posts/{postId} [get]
 func (app *application) getPostById(res http.ResponseWriter, req *http.Request) {
 	/*
 		the logic is moved to the middleware section named postContextMiddleware which tops up

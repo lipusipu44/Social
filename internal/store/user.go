@@ -83,7 +83,7 @@ func (s *UserStore) Create(ctx context.Context, tx *sql.Tx, user *User) error {
 func (u *UserStore) GetByID(ctx context.Context, id int64) (*User, error) {
 	var userVar User
 	query := `SELECT id,username,email,password,created_at FROM users WHERE id = $1 and is_active = true`
-	err := u.db.QueryRowContext(ctx, query, id).Scan(&userVar.ID, &userVar.Username, &userVar.Email, &userVar.Password, &userVar.Created)
+	err := u.db.QueryRowContext(ctx, query, id).Scan(&userVar.ID, &userVar.Username, &userVar.Email, &userVar.Password.hash, &userVar.Created)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):

@@ -1,6 +1,9 @@
 package auth
 
-import "github.com/golang-jwt/jwt/v5"
+import (
+	"fmt"
+	"github.com/golang-jwt/jwt/v5"
+)
 
 type JWTAuthenticator struct {
 	secret   string
@@ -44,8 +47,18 @@ func (j *JWTAuthenticator) GenerateToken(claims jwt.Claims) (string, error) {
 
 //ValidateToken
 /*
-dummy implementation so that JWTAuthenticator satisfies the Authenticator interface
+Now actual implementation of valid token to be written here,
+no idea to check in ChatGPT bit later
 */
 func (j *JWTAuthenticator) ValidateToken(token string) (*jwt.Token, error) {
-	return nil, nil
+	return jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(j.secret), nil
+	},
+		jwt.WithExpirationRequired(),
+		jwt.WithAudience(j.audience),
+		jwt.WithIssuer(j.issuer),
+		jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Name}))
 }

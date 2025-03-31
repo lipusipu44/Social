@@ -34,23 +34,17 @@ func (app *application) getUserById(w http.ResponseWriter, r *http.Request) {
 
 }
 
-type Follower struct {
-	UserId int64 `json:"user_id"`
-}
-
 /*
-logic self-explanatory, above struct temporarily used, once auth
-is in place these might not be required
+logic self-explanatory, removed the struct as auth is doing the work for us
 */
 func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request) {
 	user := getUserfromMiddleWare(r)
-	var followerUser Follower
-	err := readJSON(w, r, &followerUser)
+	followerUserId, err := strconv.ParseInt(chi.URLParam(r, "userID"), 10, 64)
 	if err != nil {
 		app.badRequestResponse(w, r, err)
 		return
 	}
-	errUnique := app.store.Follow.Follow(r.Context(), user.ID, followerUser.UserId)
+	errUnique := app.store.Follow.Follow(r.Context(), user.ID, followerUserId)
 	if errUnique != nil {
 		switch {
 		case errors.Is(err, store.ErrUniqueViolation):
@@ -106,10 +100,11 @@ Below lines are for middleware.
 same concept as we applied for POST,
 here is almost the same concept for middleware of user
 */
-type userContextKey string
 
-var userKey userContextKey = "user"
-
+/*
+we don't need this anymore. as its handled by auth now
+just for reference as I did it first so keeping it for learning.
+*/
 func (app *application) userMiddleWare(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "userId")
@@ -133,9 +128,4 @@ func (app *application) userMiddleWare(next http.Handler) http.Handler {
 		ctx = context.WithValue(ctx, userKey, userStruct)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
-}
-
-func getUserfromMiddleWare(r *http.Request) *store.User {
-	userExtract, _ := r.Context().Value(userKey).(*store.User)
-	return userExtract
 }

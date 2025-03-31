@@ -49,3 +49,8 @@ func (app *application) unauthorizedErrorResponse(w http.ResponseWriter, r *http
 	w.Header().Set("WWW-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
 	writeJSONError(w, http.StatusUnauthorized, "unauthorized error detected")
 }
+
+func (app *application) unauthorizedTokenResponse(w http.ResponseWriter, r *http.Request, err error) {
+	app.zapLogger.Error("unauthorized error response", zap.String("METHOD", r.Method), zap.String("path", r.URL.Path), zap.Error(err))
+	writeJSONError(w, http.StatusUnauthorized, "unauthorized error detected")
+}
