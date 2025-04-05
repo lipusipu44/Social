@@ -192,6 +192,22 @@ check the updated comment in Update Post in Post.go in store package,
 there I have mentioned about concurrent user case, how they will block it byu comparing
 version with DB version
 */
+// UpdatePost godoc
+//
+//	@Summary		Updates a post
+//	@Description	Updates a post by ID
+//	@Tags			posts
+//	@Accept			json
+//	@Produce		json
+//	@Param			postId	path		int					true	"Post ID"
+//	@Param			payload	body		UpdatePostPayload	true	"Post payload"
+//	@Success		200		{object}	store.Post
+//	@Failure		400		{object}	error
+//	@Failure		401		{object}	error
+//	@Failure		404		{object}	error
+//	@Failure		500		{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/posts/{postId} [patch]
 func (app *application) updatePostHandler(res http.ResponseWriter, req *http.Request) {
 	post := getPostFromContext(req)
 	var payload UpdatePostPayload

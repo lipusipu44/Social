@@ -28,6 +28,15 @@ definitions:
     - password
     - username
     type: object
+  main.UpdatePostPayload:
+    properties:
+      content:
+        maxLength: 255
+        type: string
+      title:
+        maxLength: 255
+        type: string
+    type: object
   main.UserWithToken:
     properties:
       created_at:
@@ -38,6 +47,10 @@ definitions:
         type: integer
       is_active:
         type: boolean
+      role:
+        $ref: '#/definitions/store.Role'
+      role_id:
+        type: integer
       token:
         type: string
       username:
@@ -109,6 +122,17 @@ definitions:
           then\n\t\tupdate will happen, and it will increase the version in each update\""
         type: integer
     type: object
+  store.Role:
+    properties:
+      desc:
+        type: string
+      id:
+        type: integer
+      level:
+        type: string
+      name:
+        type: string
+    type: object
   store.User:
     properties:
       created_at:
@@ -119,6 +143,10 @@ definitions:
         type: integer
       is_active:
         type: boolean
+      role:
+        $ref: '#/definitions/store.Role'
+      role_id:
+        type: integer
       username:
         type: string
     type: object
@@ -274,6 +302,46 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Fetches a post
+      tags:
+      - posts
+    patch:
+      consumes:
+      - application/json
+      description: Updates a post by ID
+      parameters:
+      - description: Post ID
+        in: path
+        name: postId
+        required: true
+        type: integer
+      - description: Post payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.UpdatePostPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/store.Post'
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Updates a post
       tags:
       - posts
   /users/{userId}:

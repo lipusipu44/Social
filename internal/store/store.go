@@ -56,6 +56,10 @@ type Storage struct {
 	Follow interface {
 		Follow(ctx context.Context, userId, followingId int64) error
 	}
+
+	Role interface {
+		GetByName(name string, ctx context.Context) (*Role, error)
+	}
 }
 
 func NewStorage(db *sql.DB) Storage {
@@ -72,6 +76,7 @@ func NewStorage(db *sql.DB) Storage {
 		User:    &UserStore{db: db},
 		Comment: &CommentStore{db: db},
 		Follow:  &FollowerStore{db: db},
+		Role:    &RoleStore{db: db},
 	}
 }
 

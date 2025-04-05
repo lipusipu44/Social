@@ -17,6 +17,8 @@ type User struct {
 	Password password `json:"-"` //changes from string to password struct
 	Created  string   `json:"created_at"`
 	IsActive bool     `json:"is_active"`
+	RoleId   int64    `json:"role_id"`
+	Role     Role     `json:"role"`
 }
 
 /*
@@ -57,7 +59,7 @@ type UserStore struct {
 // replaced s.db with tx in QueryRowContext
 func (s *UserStore) Create(ctx context.Context, tx *sql.Tx, user *User) error {
 	query := `
-				INSERT INTO users (email, username, password) VALUES ($1, $2, $3)
+				INSERT INTO users (email, username, password,role_id) VALUES ($1, $2, $3,$4)
 				RETURNING id,created_at
 				`
 	err := tx.QueryRowContext(ctx,
@@ -65,6 +67,7 @@ func (s *UserStore) Create(ctx context.Context, tx *sql.Tx, user *User) error {
 		user.Email,
 		user.Username,
 		user.Password.hash, //earlier used to be plain text now its hashed version
+		user.RoleId,
 	).Scan(&user.ID,
 		&user.Created)
 	if err != nil {
@@ -82,8 +85,20 @@ func (s *UserStore) Create(ctx context.Context, tx *sql.Tx, user *User) error {
 
 func (u *UserStore) GetByID(ctx context.Context, id int64) (*User, error) {
 	var userVar User
-	query := `SELECT id,username,email,password,created_at FROM users WHERE id = $1 and is_active = true`
-	err := u.db.QueryRowContext(ctx, query, id).Scan(&userVar.ID, &userVar.Username, &userVar.Email, &userVar.Password.hash, &userVar.Created)
+	query := `SELECT users.id,username,email,password,created_at,roles.* FROM users
+               join roles on roles.id = users.role_id                              
+                                             WHERE users.id = $1 and is_active = true`
+	err := u.db.QueryRowContext(ctx, query, id).Scan(
+		&userVar.ID,
+		&userVar.Username,
+		&userVar.Email,
+		&userVar.Password.hash,
+		&userVar.Created,
+		&userVar.Role.Id,
+		&userVar.Role.Name,
+		&userVar.Role.Level,
+		&userVar.Role.Desc,
+	)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):

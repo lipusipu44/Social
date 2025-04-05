@@ -159,8 +159,9 @@ func (app *application) mount() http.Handler {
 				//usage of handler details explained in posts.go file
 				r.Use(app.postContextMiddleware)
 				r.Get("/", app.getPostById)
-				r.Delete("/", app.deletePostHandler)
-				r.Patch("/", app.updatePostHandler)
+				//it checks if user is himself or permission, then update or delete
+				r.Delete("/", app.checkPostOwnership("admin", app.deletePostHandler))
+				r.Patch("/", app.checkPostOwnership("moderator", app.updatePostHandler))
 			})
 		})
 

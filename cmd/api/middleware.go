@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/lipusipu44/Social/internal/store"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -110,4 +111,61 @@ func (app *application) AuthTokenMiddleware(next http.Handler) http.Handler {
 func getUserfromMiddleWare(r *http.Request) *store.User {
 	userExtract, _ := r.Context().Value(userKey).(*store.User)
 	return userExtract
+}
+
+//checkPostOwnership
+/*
+This method works as a middleware, but it takes a handler, usage would be like
+in app class checkPostOwnership(app.updatePost), that's why signature is like this
+
+if a user has permission, then the next handler is handled, or throw as an exception
+if anytime error comes, role permission is passed in app.go for this method, its bit
+different compared to other middleware
+*/
+func (app *application) checkPostOwnership(role string, next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		//get the user and post from middleware
+		user := getUserfromMiddleWare(r)
+		post := getPostFromContext(r)
+
+		//if post is of user then go ahead
+		if post.UserID == user.ID {
+			next.ServeHTTP(w, r)
+			return
+		}
+		log.Println("Checking post ownership:", post.User.ID)
+		log.Println("Checking user id:", user.ID)
+
+		//if post is not of the user, then either moderator can change it
+		//or admin can delete it, that part to be done here
+		allowed, err := app.checkRolePrecedence(r.Context(), user, role)
+		if err != nil {
+			app.internalServerError(w, r, err)
+			return
+		}
+		if !allowed {
+			app.unauthorizedErrorResponse(w, r, fmt.Errorf("user does not have the required permission"))
+		}
+
+		next.ServeHTTP(w, r)
+
+	})
+
+}
+
+//checkRolePrecedence
+/*
+This method checks the role coming from method and role of the user
+if role level of user is greater than the role level then returns true
+*/
+func (app *application) checkRolePrecedence(context context.Context, user *store.User, role string) (bool, error) {
+
+	roleObj, err := app.store.Role.GetByName(role, context)
+	if err != nil {
+		return false, err
+	}
+	if roleObj.Level <= user.Role.Level {
+		return true, nil
+	}
+	return false, nil
 }
