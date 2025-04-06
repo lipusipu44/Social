@@ -6,6 +6,8 @@ import (
 	db2 "github.com/lipusipu44/Social/internal/db"
 	"github.com/lipusipu44/Social/internal/env"
 	"github.com/lipusipu44/Social/internal/store"
+	"github.com/lipusipu44/Social/internal/store/cache"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 	"log"
 	"time"
@@ -96,6 +98,14 @@ func main() {
 				issuer:  env.GetEnv("JWT_ISSUER", "gophersocial"),
 			},
 		},
+
+		//initializing redis client in main config section
+		redis: rediConfig{
+			addr:     env.GetEnv("REDIS_ADDR", "localhost:6379"),
+			password: env.GetEnv("REDIS_PASSWORD", ""),
+			database: env.GetEnvInt("REDIS_DATABASE", 0),
+			enabled:  env.GetEnvBool("REDIS_ENABLED", true),
+		},
 	}
 	/*
 		creating db instance from db.go in internal/db package,
@@ -119,13 +129,32 @@ func main() {
 		cfg.auth.jwtConfiguration.issuer,
 		cfg.auth.jwtConfiguration.issuer)
 
+	/*
+		Section for Cache storage initialization after redis client creation
+	*/
+	var redisCl *redis.Client
+	if cfg.redis.enabled {
+		redisCl = cache.NewRedislient(cfg.redis.addr, cfg.redis.password, cfg.redis.database)
+		logger.Info("Redis Connection Pool Established")
+		defer func(redisCl *redis.Client) { //its same as defer redisCl.close ()
+			err := redisCl.Close()
+			if err != nil {
+				logger.Warn("Redis Connection Pool Close", zap.Error(err))
+			}
+		}(redisCl)
+	}
+
+	redisStore := cache.NewRedisStorage(redisCl)
+
 	app := application{
 		config: cfg,
 		store:  storage,
 		//passing logger to app
 		zapLogger:     logger,
 		authenticator: jwtAuthenticator,
+		redisStorage:  redisStore, //redis to be used in main class
 	}
+
 	//mount is initialized to accommodate HTTP calls
 
 	/*

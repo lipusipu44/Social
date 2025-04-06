@@ -7,6 +7,7 @@ import (
 	"github.com/lipusipu44/Social/docs" //required to generate swagger doc
 	"github.com/lipusipu44/Social/internal/auth"
 	"github.com/lipusipu44/Social/internal/store"
+	"github.com/lipusipu44/Social/internal/store/cache"
 	"go.uber.org/zap"
 
 	//imported the middleware for swagger
@@ -64,6 +65,15 @@ type config struct {
 	apiURL   string
 	mailConf mailConfig // all details of mail
 	auth     authConfig //used for authentication
+	redis    rediConfig // to get all redis config and its enabled or not
+}
+
+// initlization of this will happen in main class
+type rediConfig struct {
+	addr     string
+	password string
+	database int
+	enabled  bool
 }
 
 //application
@@ -90,6 +100,10 @@ type application struct {
 		Same concept as store store.Storage part, this is created in internal=> auth
 	*/
 	authenticator auth.Authenticator
+	/*
+		Same concept as DB part, exact replica
+	*/
+	redisStorage cache.CacheStorage
 }
 
 /*

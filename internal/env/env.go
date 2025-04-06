@@ -28,8 +28,20 @@ func GetEnvInt(key string, fallback int) int {
 	if value, ok := os.LookupEnv(key); ok {
 		val, err := strconv.Atoi(value)
 		if err != nil {
-			return val
+			return fallback
 		}
+		return val
+	}
+	return fallback
+}
+
+func GetEnvBool(key string, fallback bool) bool {
+	if value, ok := os.LookupEnv(key); ok {
+		val, err := strconv.ParseBool(value)
+		if err != nil {
+			return fallback
+		}
+		return val
 	}
 	return fallback
 }
